@@ -91,7 +91,8 @@ def render_auth_gate() -> None:
             with st.form("reg_form"):
                 reg_name  = st.text_input("Full Name", placeholder="e.g. Juan dela Cruz")
                 reg_email = st.text_input("RTU Email", placeholder="0000-000000@rtu.edu.ph")
-                reg_role  = st.selectbox("Role", ["Student", "Faculty"])
+                reg_role  = st.selectbox("Role", ["Student"])
+                
                 reg_pw    = st.text_input("Password", type="password")
                 reg_pw2   = st.text_input("Confirm Password", type="password")
                 reg_btn   = st.form_submit_button("Create Account", type="primary", use_container_width=True)
