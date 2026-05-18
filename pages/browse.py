@@ -214,23 +214,39 @@ def render() -> None:
     cols = st.columns(3)
     for index, item in enumerate(page_items):
         with cols[index % 3]:
-            st.markdown(f"""
-            <div style="background:white; border:1px solid var(--border); border-radius:var(--radius-lg); padding:1.2rem; margin-bottom:1.2rem; box-shadow:var(--shadow-sm);">
-               <div style="margin-bottom:8px;">{badge(item['status'])}</div>
-               <h4 style="margin:4px 0; color:var(--text);">{truncate(item['title'], 28)}</h4>
-               <p style="font-size:.78rem; color:var(--text-secondary); margin:4px 0;">{icon_html('map-pin',12,'#6B7280')} {item['location'] or 'No Location'}</p>
-            </div>
-            """, unsafe_allow_html=True)
-
-            b1, b2 = st.columns(2)
-
-            # Decode photo for dialog display
+            # Decode photo first
             photo_bytes = None
             if item.get("photo_url"):
                 try:
                     photo_bytes = base64.b64decode(item["photo_url"])
                 except Exception:
                     photo_bytes = None
+
+            # Show photo or grey placeholder
+            if photo_bytes:
+                st.markdown(photo_html(photo_bytes, width="100%", height="160px", radius="12px 12px 0 0"), unsafe_allow_html=True)
+            else:
+                st.markdown("""
+                <div style="width:100%;height:160px;background:#F3F4F6;border-radius:12px 12px 0 0;
+                            display:flex;align-items:center;justify-content:center;
+                            color:#9CA3AF;font-size:.78rem;">
+                  No photo
+                </div>""", unsafe_allow_html=True)
+
+            # Card info below photo
+            st.markdown(f"""
+            <div style="background:white; border:1px solid var(--border); border-top:none;
+                        border-radius:0 0 var(--radius-lg) var(--radius-lg);
+                        padding:1rem; margin-bottom:1.2rem; box-shadow:var(--shadow-sm);">
+               <div style="margin-bottom:6px;">{badge(item['status'])}</div>
+               <h4 style="margin:4px 0; color:var(--text);">{truncate(item['title'], 28)}</h4>
+               <p style="font-size:.78rem; color:var(--text-secondary); margin:4px 0;">
+                 {icon_html('map-pin',12,'#6B7280')} {item['location'] or 'No Location'}
+               </p>
+            </div>
+            """, unsafe_allow_html=True)
+
+            b1, b2 = st.columns(2)
 
             # Map DB columns to dialog-compatible keys
             compat_item = {
