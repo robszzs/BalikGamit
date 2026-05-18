@@ -7,7 +7,7 @@ import base64
 from utils import icon, icon_html, badge, photo_html
 from state import is_faculty
 from db import supabase
-
+from dialogs import create_faculty_dialog
 
 def render() -> None:
     if not is_faculty():
@@ -21,6 +21,10 @@ def render() -> None:
     st.title("Admin Dashboard")
     st.caption("Approve posts, manage claim requests, and keep the campus board accurate.")
     st.markdown("---")
+    col_title, col_btn = st.columns([4, 1])
+    with col_btn:                             # ← must be indented to match col_title
+        if st.button("+ Faculty Account", type="primary", use_container_width=True):
+            create_faculty_dialog()
 
     # ── Fetch live metrics from Supabase ──────────────────────────────────────
     try:
