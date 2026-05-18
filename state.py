@@ -18,6 +18,7 @@ def init_state() -> None:
     if "browse_page"         not in st.session_state: st.session_state.browse_page          = 0
     if "last_filter_key"     not in st.session_state: st.session_state.last_filter_key      = ""
     if "page"                not in st.session_state: st.session_state.page                 = "Home"
+    if "show_logout_confirm" not in st.session_state: st.session_state.show_logout_confirm  = False
 
 
 def is_faculty() -> bool:
