@@ -5,6 +5,22 @@ dialogs.py — Shared Streamlit dialog components for BalikGamit.
 import streamlit as st
 from utils import icon, icon_html, badge, photo_html, CATEGORY_ICONS
 
+@st.dialog("Sign Out")
+def sign_out_confirm_dialog() -> None:
+    st.markdown(
+        "<p style='margin-bottom:20px;color:#374151;'>Are you sure you want to sign out of your account?</p>",
+        unsafe_allow_html=True,
+    )
+    col_cancel, col_confirm = st.columns(2)
+    with col_cancel:
+        if st.button("Cancel", use_container_width=True):
+            st.rerun()
+    with col_confirm:
+        if st.button("Sign Out", use_container_width=True, type="primary"):
+            st.session_state.logged_in    = False
+            st.session_state.current_user = None
+            st.session_state.page         = "Home"
+            st.rerun()
 
 @st.dialog("Item Details", width="large")
 def item_detail_dialog(item: dict) -> None:
