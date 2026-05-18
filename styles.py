@@ -7,10 +7,15 @@ import streamlit as st
 
 
 def inject_styles() -> None:
+    # Load fonts via link tag (more reliable on Streamlit Cloud than @import)
+    st.markdown("""
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+    """, unsafe_allow_html=True)
+
     st.markdown("""
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
-
   :root {
     --blue: #164EC6;
     --blue-dark: #0F3A96;
@@ -364,7 +369,6 @@ def inject_styles() -> None:
     display: block;
   }
 
-  /* ── Pagination ── */
   .pg-container {
     display: flex;
     align-items: center;
