@@ -86,6 +86,33 @@ def inject_styles() -> None:
     color: var(--blue) !important;
   }
 
+  /* ── Form submit button fix for Streamlit Cloud ── */
+  [data-testid="stFormSubmitButton"] > button {
+    background: var(--blue) !important;
+    color: white !important;
+    border-radius: var(--radius) !important;
+    font-weight: 600 !important;
+    font-family: 'DM Sans', sans-serif !important;
+    border: none !important;
+    box-shadow: 0 1px 3px rgba(22,78,198,.3) !important;
+  }
+  [data-testid="stFormSubmitButton"] > button:hover {
+    background: var(--blue-dark) !important;
+    box-shadow: 0 4px 10px rgba(22,78,198,.35) !important;
+  }
+
+  /* ── Hide "Press Enter to submit form" tooltip ── */
+  [data-testid="InputInstructions"] {
+    display: none !important;
+  }
+
+  /* ── Fix form container overlap ── */
+  [data-testid="stForm"] {
+    border: none !important;
+    padding: 0 !important;
+    background: transparent !important;
+  }
+
   /* ── Inputs — broad selectors for Streamlit Cloud compatibility ── */
   input[type="text"],
   input[type="password"],
