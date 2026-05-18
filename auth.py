@@ -3,43 +3,87 @@ auth.py — Login and registration gate for BalikGamit (Supabase Version).
 """
 
 import streamlit as st
+import base64
+import os
 from utils import icon, EMAIL_PATTERN, _hash
-from db import supabase 
+from db import supabase
+
+
+def _img_b64(filename: str) -> str:
+    path = os.path.join(os.path.dirname(__file__), "assets", filename)
+    with open(path, "rb") as f:
+        return base64.b64encode(f.read()).decode()
+
 
 def render_auth_gate() -> None:
-    """Render the full-page login/register UI and stop execution."""
-    
-    # Initialize auth_tab if it doesn't exist to prevent KeyErrors
     if "auth_tab" not in st.session_state:
         st.session_state.auth_tab = "login"
 
-    _, centre, _ = st.columns([1, 2, 1])
-    with centre:
-        st.markdown("<div style='height:48px'></div>", unsafe_allow_html=True)
+    logo_b64   = _img_b64("rtulogo.png")
+    campus_b64 = _img_b64("rtumaincampus.png")
 
-        # ── Logo & Header ───────────────────────────────────────────────────
+    left_col, right_col = st.columns([5, 6])
+
+    with right_col:
         st.markdown(f"""
-        <div style="text-align:center;margin-bottom:32px;">
-          <div style="width:52px;height:52px;background:#164EC6;border-radius:13px;
-                      display:inline-flex;align-items:center;justify-content:center;
-                      box-shadow:0 4px 14px rgba(22,78,198,.35);margin-bottom:12px;">
-            {icon("search", 24, "white")}
+        <style>
+          [data-testid="stMain"] > div:first-child {{ padding-top: 0 !important; }}
+        </style>
+        <div style="position:relative;height:100vh;min-height:600px;overflow:hidden;">
+          <img src="data:image/png;base64,{campus_b64}"
+               style="width:100%;height:100%;object-fit:cover;display:block;" />
+          <div style="position:absolute;inset:0;background:linear-gradient(to bottom,
+               rgba(22,48,120,0.45) 0%, rgba(22,48,120,0.25) 50%, rgba(10,25,80,0.75) 100%);">
           </div>
-          <div style="font-weight:700;font-size:1.5rem;letter-spacing:-.04em;color:#111827;">
-            BalikGamit
-          </div>
-          <div style="font-size:.78rem;color:#6B7280;margin-top:3px;letter-spacing:.01em;">
-            Rizal Technological University &mdash; Campus Lost &amp; Found
+          <div style="position:absolute;bottom:48px;left:40px;right:40px;">
+            <div style="font-size:2rem;font-weight:800;color:#ffffff;
+                        letter-spacing:-.03em;margin-bottom:10px;
+                        text-shadow:0 2px 12px rgba(0,0,0,.4);">
+              Balik Gamit
+            </div>
+            <div style="font-size:.95rem;color:rgba(255,255,255,.85);
+                        line-height:1.6;max-width:380px;
+                        text-shadow:0 1px 6px rgba(0,0,0,.3);">
+              BalikGamit is RTU's web-based Lost &amp; Found platform —
+              connecting students and faculty to report, search, and
+              reclaim lost belongings in one organized place.
+            </div>
           </div>
         </div>
         """, unsafe_allow_html=True)
 
-        # ── Custom Tabs ───────────────────────────────────────────────────────
+    with left_col:
+        st.markdown("<div style='height:40px'></div>", unsafe_allow_html=True)
+
+        st.markdown(f"""
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:36px;">
+          <img src="data:image/png;base64,{logo_b64}"
+               style="width:52px;height:52px;object-fit:contain;" />
+          <div>
+            <div style="font-weight:700;font-size:1.1rem;color:#111827;letter-spacing:-.02em;line-height:1.2;">
+              BalikGamit
+            </div>
+            <div style="font-size:.72rem;color:#6B7280;">Rizal Technological University</div>
+          </div>
+        </div>
+
+        <div style="margin-bottom:28px;">
+          <div style="font-size:1.8rem;font-weight:800;color:#111827;letter-spacing:-.04em;line-height:1.2;">
+            {"Welcome back" if st.session_state.auth_tab == "login" else "Create account"}
+          </div>
+          <div style="font-size:.82rem;color:#6B7280;margin-top:6px;">
+            {"Please enter your details to sign in." if st.session_state.auth_tab == "login" else "Only @rtu.edu.ph emails are accepted."}
+          </div>
+        </div>
+        """, unsafe_allow_html=True)
+
         col1, col2 = st.columns(2)
-        if col1.button("Log In", use_container_width=True, type="primary" if st.session_state.auth_tab == "login" else "secondary"):
+        if col1.button("Log In", use_container_width=True,
+                       type="primary" if st.session_state.auth_tab == "login" else "secondary"):
             st.session_state.auth_tab = "login"
             st.rerun()
-        if col2.button("Create Account", use_container_width=True, type="primary" if st.session_state.auth_tab == "register" else "secondary"):
+        if col2.button("Create Account", use_container_width=True,
+                       type="primary" if st.session_state.auth_tab == "register" else "secondary"):
             st.session_state.auth_tab = "register"
             st.rerun()
 
@@ -47,7 +91,6 @@ def render_auth_gate() -> None:
             st.success(st.session_state.reg_success)
             st.session_state.reg_success = None
 
-        # ── Login Logic ───────────────────────────────────────────────────────
         if st.session_state.auth_tab == "login":
             st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
             with st.form("login_form"):
@@ -61,44 +104,37 @@ def render_auth_gate() -> None:
                     st.error("Invalid email format.")
                 else:
                     try:
-                        # 1. Query Supabase for the user
                         response = supabase.table("users").select("*").eq("email", email_lc).execute()
-                        
                         if not response.data:
                             st.error("No account found. Please register first.")
                         else:
                             user_data = response.data[0]
-                            # 2. Check hashed password
                             if user_data["pw_hash"] != _hash(login_pw):
                                 st.error("Incorrect password.")
                             else:
-                                # 3. Success! Set session state
-                                st.session_state.logged_in = True
+                                st.session_state.logged_in    = True
                                 st.session_state.current_user = {
-                                    "email": email_lc, 
-                                    "name": user_data["name"], 
-                                    "role": user_data["role"]
+                                    "email": email_lc,
+                                    "name":  user_data["name"],
+                                    "role":  user_data["role"]
                                 }
                                 st.session_state.page = "Home"
                                 st.rerun()
                     except Exception as e:
                         st.error(f"Database error: {e}")
 
-        # ── Register Logic ────────────────────────────────────────────────────
         else:
             st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
-            st.caption("Only @rtu.edu.ph emails are accepted.")
             with st.form("reg_form"):
                 reg_name  = st.text_input("Full Name", placeholder="e.g. Juan dela Cruz")
                 reg_email = st.text_input("RTU Email", placeholder="0000-000000@rtu.edu.ph")
-                reg_role  = st.selectbox("Role", ["Student"])
-                
                 reg_pw    = st.text_input("Password", type="password")
                 reg_pw2   = st.text_input("Confirm Password", type="password")
                 reg_btn   = st.form_submit_button("Create Account", type="primary", use_container_width=True)
 
             if reg_btn:
                 email_lc = reg_email.strip().lower()
+                reg_role = "student"
                 if not reg_name.strip():
                     st.error("Please enter your full name.")
                 elif not EMAIL_PATTERN.match(email_lc):
@@ -109,21 +145,17 @@ def render_auth_gate() -> None:
                     st.error("Passwords do not match.")
                 else:
                     try:
-                        # 1. Check if email already exists
                         check = supabase.table("users").select("email").eq("email", email_lc).execute()
                         if check.data:
                             st.error("An account with that email already exists.")
                         else:
-                            # 2. Insert the new user
-                            new_user = {
-                                "email": email_lc,
-                                "name": reg_name.strip(),
-                                "role": reg_role.lower(),
+                            supabase.table("users").insert({
+                                "email":   email_lc,
+                                "name":    reg_name.strip(),
+                                "role":    reg_role,
                                 "pw_hash": _hash(reg_pw),
-                                "status": "active"
-                            }
-                            supabase.table("users").insert(new_user).execute()
-                            
+                                "status":  "active"
+                            }).execute()
                             st.session_state.reg_success = f"Account created! You can now sign in as {reg_name.strip()}."
                             st.session_state.auth_tab = "login"
                             st.rerun()
