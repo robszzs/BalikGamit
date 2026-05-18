@@ -39,7 +39,7 @@ def render_auth_gate() -> None:
             <div style="font-size:2rem;font-weight:800;color:#ffffff;
                         letter-spacing:-.03em;margin-bottom:10px;
                         text-shadow:0 2px 12px rgba(0,0,0,.4);">
-              Balik Gamit
+              BalikGamit
             </div>
             <div style="font-size:.95rem;color:rgba(255,255,255,.85);
                         line-height:1.6;max-width:380px;
