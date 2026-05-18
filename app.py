@@ -37,7 +37,8 @@ init_state()
 
 # ─── Auth gate ────────────────────────────────────────────────────────────────
 if not st.session_state.logged_in:
-    render_auth_gate()          # calls st.stop() internally
+    st.markdown("<style>[data-testid='stSidebar'] {display: none;}</style>", unsafe_allow_html=True)
+    render_auth_gate()          # calls st.stop() internally          # calls st.stop() internally
 
 # ─── Sidebar navigation ───────────────────────────────────────────────────────
 render_sidebar()
