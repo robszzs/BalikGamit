@@ -29,7 +29,7 @@ def render_auth_gate() -> None:
         <style>
           [data-testid="stMain"] > div:first-child {{ padding-top: 0 !important; }}
         </style>
-        <div style="position:relative;height:100vh;min-height:600px;overflow:hidden;">
+        <div style="position:relative;height:100vh;min-height:500px;overflow:hidden;">
           <img src="data:image/png;base64,{campus_b64}"
                style="width:100%;height:100%;object-fit:cover;display:block;" />
           <div style="position:absolute;inset:0;background:linear-gradient(to bottom,
@@ -44,8 +44,7 @@ def render_auth_gate() -> None:
             <div style="font-size:.95rem;color:rgba(255,255,255,.85);
                         line-height:1.6;max-width:380px;
                         text-shadow:0 1px 6px rgba(0,0,0,.3);">
-              BalikGamit is RTU's web-based Lost &amp; Found platform —
-              connecting students and faculty to report, search, and
+              BalikGamit is RTU's web-based Lost &amp; Found platform — connecting students and faculty to report, search, and
               reclaim lost belongings in one organized place.
             </div>
           </div>
