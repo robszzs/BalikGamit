@@ -22,6 +22,41 @@ def sign_out_confirm_dialog() -> None:
             st.session_state.page         = "Home"
             st.rerun()
 
+@st.dialog("Create Faculty Account")
+def create_faculty_dialog() -> None:
+    with st.form("faculty_reg_form"):
+        reg_name  = st.text_input("Full Name", placeholder="e.g. Maria Santos")
+        reg_email = st.text_input("RTU Email", placeholder="0000-000000@rtu.edu.ph")
+        reg_pw    = st.text_input("Password", type="password")
+        reg_pw2   = st.text_input("Confirm Password", type="password")
+        reg_btn   = st.form_submit_button("Create Faculty Account", type="primary", use_container_width=True)
+
+    if reg_btn:
+        from utils import EMAIL_PATTERN, _hash
+        from db import supabase
+        email_lc = reg_email.strip().lower()
+        if not reg_name.strip():
+            st.error("Please enter a full name.")
+        elif not EMAIL_PATTERN.match(email_lc):
+            st.error("Email must be in XXXX-XXXXXX@rtu.edu.ph format.")
+        elif len(reg_pw) < 6:
+            st.error("Password must be at least 6 characters.")
+        elif reg_pw != reg_pw2:
+            st.error("Passwords do not match.")
+        else:
+            check = supabase.table("users").select("email").eq("email", email_lc).execute()
+            if check.data:
+                st.error("An account with that email already exists.")
+            else:
+                supabase.table("users").insert({
+                    "email":   email_lc,
+                    "name":    reg_name.strip(),
+                    "role":    "faculty",
+                    "pw_hash": _hash(reg_pw),
+                    "status":  "active"
+                }).execute()
+                st.success(f"Faculty account created for {reg_name.strip()}!")
+
 @st.dialog("Item Details", width="large")
 def item_detail_dialog(item: dict) -> None:
     cat_icon_name = CATEGORY_ICONS.get(item.get("category", "Other"), "package")
