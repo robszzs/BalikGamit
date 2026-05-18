@@ -86,10 +86,21 @@ def render_sidebar() -> None:
                     st.session_state.page = pg
                     st.rerun()
 
-        st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
+       st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
         st.markdown("---")
         if st.button("Sign Out", use_container_width=True):
-            st.session_state.logged_in    = False
-            st.session_state.current_user = None
-            st.session_state.page         = "Home"
-            st.rerun()
+            st.session_state.show_logout_confirm = True
+
+        if st.session_state.get("show_logout_confirm", False):
+            st.markdown("---")
+            st.warning("Are you sure you want to sign out?")
+            c1, c2 = st.columns(2)
+            if c1.button("Yes, Sign Out", type="primary", use_container_width=True):
+                st.session_state.logged_in    = False
+                st.session_state.current_user = None
+                st.session_state.page         = "Home"
+                st.session_state.show_logout_confirm = False
+                st.rerun()
+            if c2.button("Cancel", type="secondary", use_container_width=True):
+                st.session_state.show_logout_confirm = False
+                st.rerun()
