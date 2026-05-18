@@ -6,7 +6,7 @@ import streamlit as st
 from utils import icon, icon_html
 from state import is_faculty
 from db import supabase
-
+from dialogs import sign_out_confirm_dialog
 
 def render_sidebar() -> None:
     with st.sidebar:
@@ -86,7 +86,7 @@ def render_sidebar() -> None:
                     st.session_state.page = pg
                     st.rerun()
 
-       st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
         st.markdown("---")
         if st.button("Sign Out", use_container_width=True):
-            st.session_state.show_logout_confirm = True
+            sign_out_confirm_dialog()
