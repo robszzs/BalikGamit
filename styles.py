@@ -55,6 +55,7 @@ def inject_styles() -> None:
   }
   [data-testid="stSidebar"] .block-container { padding: 1.5rem 1.25rem; }
 
+  /* ── Buttons ── */
   .stButton > button {
     border-radius: var(--radius) !important;
     font-weight: 600 !important;
@@ -85,10 +86,20 @@ def inject_styles() -> None:
     color: var(--blue) !important;
   }
 
-  .stTextInput > div > div > input,
-  .stTextArea > div > div > textarea,
-  .stSelectbox > div > div,
-  .stMultiSelect > div > div {
+  /* ── Inputs — broad selectors for Streamlit Cloud compatibility ── */
+  input[type="text"],
+  input[type="password"],
+  input[type="email"],
+  input[type="number"],
+  input[type="search"],
+  textarea,
+  .stTextInput input,
+  .stTextArea textarea,
+  [data-baseweb="input"] input,
+  [data-baseweb="textarea"] textarea,
+  [data-baseweb="base-input"] input,
+  [data-testid="stTextInput"] input,
+  [data-testid="stTextArea"] textarea {
     border-radius: var(--radius) !important;
     border: 1px solid var(--border-strong) !important;
     font-family: 'DM Sans', sans-serif !important;
@@ -96,14 +107,53 @@ def inject_styles() -> None:
     background: white !important;
     box-shadow: var(--shadow-sm) !important;
     transition: border-color .15s ease, box-shadow .15s ease !important;
+    color: var(--text) !important;
   }
-  .stTextInput > div > div > input:focus,
-  .stTextArea > div > div > textarea:focus {
+  input[type="text"]:focus,
+  input[type="password"]:focus,
+  textarea:focus,
+  .stTextInput input:focus,
+  .stTextArea textarea:focus,
+  [data-baseweb="input"] input:focus,
+  [data-baseweb="textarea"] textarea:focus {
     border-color: var(--blue) !important;
     box-shadow: 0 0 0 3px rgba(22,78,198,.08) !important;
     outline: none !important;
   }
 
+  /* Input wrapper containers */
+  [data-baseweb="input"],
+  [data-baseweb="base-input"],
+  [data-testid="stTextInput"] > div,
+  [data-testid="stTextArea"] > div {
+    border-radius: var(--radius) !important;
+    border: 1px solid var(--border-strong) !important;
+    background: white !important;
+    box-shadow: var(--shadow-sm) !important;
+  }
+
+  /* Selectbox */
+  [data-baseweb="select"] > div,
+  [data-testid="stSelectbox"] > div > div,
+  .stSelectbox > div > div {
+    border-radius: var(--radius) !important;
+    border: 1px solid var(--border-strong) !important;
+    background: white !important;
+    box-shadow: var(--shadow-sm) !important;
+    font-family: 'DM Sans', sans-serif !important;
+    font-size: .875rem !important;
+  }
+
+  /* Multiselect */
+  [data-baseweb="multi-select"],
+  .stMultiSelect > div > div {
+    border-radius: var(--radius) !important;
+    border: 1px solid var(--border-strong) !important;
+    background: white !important;
+    box-shadow: var(--shadow-sm) !important;
+  }
+
+  /* ── Metrics ── */
   [data-testid="stMetric"] {
     background: white;
     border: 1px solid var(--border);
@@ -154,6 +204,7 @@ def inject_styles() -> None:
     background: white !important;
   }
 
+  /* ── Badges ── */
   .badge {
     display: inline-flex;
     align-items: center;
@@ -173,6 +224,7 @@ def inject_styles() -> None:
   .badge-approved { background: var(--green-subtle); color: #166534; border: 1px solid #BBF7D0; }
   .badge-rejected { background: var(--red-subtle);   color: #991B1B; border: 1px solid #FECACA; }
 
+  /* ── Hero ── */
   .hero-banner {
     background: linear-gradient(135deg, #164EC6 0%, #0F3A96 100%);
     border-radius: 16px;
