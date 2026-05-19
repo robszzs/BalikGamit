@@ -8,6 +8,11 @@ from utils import icon, icon_html, badge, photo_html, truncate, CATEGORY_ICONS
 from dialogs import item_detail_dialog
 from db import supabase
 
+STATUS_COLORS = {
+    "lost":    {"bg": "#FEF2F2", "border": "#FECACA", "accent": "#EF4444", "icon": "🔴"},
+    "found":   {"bg": "#EFF6FF", "border": "#BFDBFE", "accent": "#3B82F6", "icon": "🔵"},
+    "claimed": {"bg": "#F0FDF4", "border": "#BBF7D0", "accent": "#22C55E", "icon": "🟢"},
+}
 
 def render() -> None:
     st.markdown(f"""
@@ -24,7 +29,6 @@ def render() -> None:
     </div>
     """, unsafe_allow_html=True)
 
-    # Fetch records safely from Supabase
     try:
         all_items_resp = supabase.table("items").select("*").execute()
         all_items = all_items_resp.data if all_items_resp.data else []
@@ -62,7 +66,6 @@ def render() -> None:
             st.info("No approved items yet. Check back after an admin reviews the board.")
         else:
             for item in recent:
-                # Decode photo_url (base64 string) into bytes for rendering
                 photo_bytes = None
                 if item.get("photo_url"):
                     try:
@@ -70,7 +73,6 @@ def render() -> None:
                     except Exception:
                         photo_bytes = None
 
-                # Build a dialog-compatible dict using correct DB column names
                 compat_item = {
                     "id": item["id"],
                     "status": item["status"],
@@ -84,16 +86,37 @@ def render() -> None:
                     "contact": item.get("contact") or item.get("reporter_email"),
                 }
 
+                colors = STATUS_COLORS.get(item["status"], STATUS_COLORS["lost"])
+
                 with st.container():
                     f_col1, f_col2 = st.columns([1, 4])
                     with f_col1:
-                        st.markdown(photo_html(photo_bytes, width="100%", height="75px", radius="8px"), unsafe_allow_html=True)
+                        if photo_bytes:
+                            st.markdown(photo_html(photo_bytes, width="100%", height="80px", radius="10px"), unsafe_allow_html=True)
+                        else:
+                            st.markdown(f"""
+                            <div style="width:100%;height:80px;background:{colors['bg']};
+                                        border:1px solid {colors['border']};border-radius:10px;
+                                        display:flex;align-items:center;justify-content:center;
+                                        font-size:1.5rem;">
+                              {colors['icon']}
+                            </div>""", unsafe_allow_html=True)
                     with f_col2:
-                        st.markdown(f"**{item['title']}** &nbsp;{badge(item['status'])}", unsafe_allow_html=True)
-                        st.markdown(
-                            f"<small style='color:#6B7280;'>Category: {item.get('category','—')} &middot; Location: {item.get('location','—')} &middot; Date: {item.get('incident_date','—')}</small>",
-                            unsafe_allow_html=True
-                        )
+                        st.markdown(f"""
+                        <div style="background:{colors['bg']};border:1px solid {colors['border']};
+                                    border-left:4px solid {colors['accent']};
+                                    border-radius:10px;padding:10px 14px;margin-bottom:6px;">
+                          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+                            <span style="font-weight:700;font-size:.92rem;color:#111827;">{item['title']}</span>
+                            {badge(item['status'])}
+                          </div>
+                          <div style="font-size:.75rem;color:#6B7280;">
+                            📂 {item.get('category','—')} &nbsp;·&nbsp;
+                            📍 {item.get('location','—')} &nbsp;·&nbsp;
+                            📅 {item.get('incident_date','—')}
+                          </div>
+                        </div>
+                        """, unsafe_allow_html=True)
                         if st.button("View Details", key=f"home_view_{item['id']}"):
                             item_detail_dialog(compat_item)
 
@@ -103,9 +126,25 @@ def render() -> None:
             unsafe_allow_html=True,
         )
         st.subheader("Get Started")
+
+        st.markdown("""
+        <div style="background:linear-gradient(135deg,#EFF6FF,#DBEAFE);border:1px solid #BFDBFE;
+                    border-radius:12px;padding:14px;margin-bottom:12px;">
+          <div style="font-size:.8rem;color:#1D4ED8;font-weight:600;margin-bottom:4px;">🔍 Browse Board</div>
+          <div style="font-size:.73rem;color:#3B82F6;">View all approved lost & found items on campus.</div>
+        </div>
+        """, unsafe_allow_html=True)
         if st.button("Browse Campus Board", use_container_width=True, type="primary"):
             st.session_state.page = "Browse Items"
             st.rerun()
+
+        st.markdown("""
+        <div style="background:linear-gradient(135deg,#FFF7ED,#FFEDD5);border:1px solid #FED7AA;
+                    border-radius:12px;padding:14px;margin-bottom:12px;margin-top:12px;">
+          <div style="font-size:.8rem;color:#C2410C;font-weight:600;margin-bottom:4px;">📋 Report Item</div>
+          <div style="font-size:.73rem;color:#EA580C;">Lost something or found an item? Post it here.</div>
+        </div>
+        """, unsafe_allow_html=True)
         if st.button("Report Lost or Found Item", use_container_width=True):
             st.session_state.page = "Post an Item"
             st.rerun()

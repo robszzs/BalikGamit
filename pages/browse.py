@@ -235,20 +235,29 @@ def render() -> None:
                 except Exception:
                     photo_bytes = None
 
-            # Show photo or grey placeholder
+            # Status color map
+            sc = {
+                "lost":    ("FEF2F2","FECACA","EF4444","🔴"),
+                "found":   ("EFF6FF","BFDBFE","3B82F6","🔵"),
+                "claimed": ("F0FDF4","BBF7D0","22C55E","🟢"),
+            }.get(item["status"], ("F9FAFB","E5E7EB","6B7280","⚪"))
+
+            # Show photo or colored placeholder
             if photo_bytes:
                 st.markdown(photo_html(photo_bytes, width="100%", height="160px", radius="12px 12px 0 0"), unsafe_allow_html=True)
             else:
-                st.markdown("""
-                <div style="width:100%;height:160px;background:#F3F4F6;border-radius:12px 12px 0 0;
+                st.markdown(f"""
+                <div style="width:100%;height:160px;background:#{sc[0]};
+                            border:1px solid #{sc[1]};border-radius:12px 12px 0 0;
                             display:flex;align-items:center;justify-content:center;
-                            color:#9CA3AF;font-size:.78rem;">
-                  No photo
+                            font-size:2.5rem;">
+                  {sc[3]}
                 </div>""", unsafe_allow_html=True)
 
             # Card info below photo
             st.markdown(f"""
-            <div style="background:white; border:1px solid var(--border); border-top:none;
+            <div style="background:white; border:1px solid #{sc[1]}; border-top:none;
+                        border-left:4px solid #{sc[2]};
                         border-radius:0 0 var(--radius-lg) var(--radius-lg);
                         padding:1rem; margin-bottom:1.2rem; box-shadow:var(--shadow-sm);">
                <div style="margin-bottom:6px;">{badge(item['status'])}</div>

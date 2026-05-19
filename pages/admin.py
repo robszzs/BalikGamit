@@ -181,10 +181,16 @@ def render() -> None:
         else:
             for c_idx, clm in enumerate(pending_claims):
                 st.markdown(f"""
-                <div style="background:#FAFBFC;border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px;">
-                  <div style="font-weight:600;font-size:.84rem;">Claim on: {clm['item_title']}</div>
-                  <div style="font-size:.74rem;color:#6B7280;margin:2px 0;">By: {clm['claimant_name']} ({clm['claimant_email']})</div>
-                  <div style="background:white;border:1px solid #E5E7EB;padding:6px;border-radius:4px;font-size:.76rem;color:#374151;margin:6px 0;">
+                <div style="background:linear-gradient(135deg,#EFF6FF,#DBEAFE);border:1px solid #BFDBFE;
+                            border-left:4px solid #3B82F6;border-radius:10px;padding:12px;margin-bottom:10px;">
+                  <div style="font-weight:700;font-size:.84rem;color:#1D4ED8;margin-bottom:4px;">
+                    🎫 Claim on: {clm['item_title']}
+                  </div>
+                  <div style="font-size:.74rem;color:#3B82F6;margin-bottom:6px;">
+                    👤 {clm['claimant_name']} · {clm['claimant_email']}
+                  </div>
+                  <div style="background:white;border:1px solid #BFDBFE;padding:8px;
+                              border-radius:6px;font-size:.76rem;color:#374151;font-style:italic;">
                     "{clm['proof_text']}"
                   </div>
                 </div>
