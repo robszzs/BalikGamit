@@ -193,13 +193,27 @@ def render() -> None:
                 if cb1.button("Grant", key=f"grant_{c_idx}", type="primary", use_container_width=True):
                     supabase.table("claims").update({"status": "approved"}).eq("id", clm["id"]).execute()
                     supabase.table("items").update({"status": "claimed"}).eq("id", clm["item_id"]).execute()
+
+                    # Auto-delete duplicate lost/found entries with the same title
+                    original_item = items_map.get(clm.get("item_id"), {})
+                    item_title = original_item.get("title", "")
+                    if item_title:
+                        # Delete all OTHER items with same title that are lost or found (not the claimed one)
+                        duplicates_resp = supabase.table("items") \
+                            .select("id") \
+                            .eq("title", item_title) \
+                            .neq("id", clm["item_id"]) \
+                            .in_("status", ["lost", "found"]) \
+                            .execute()
+                        for dup in (duplicates_resp.data or []):
+                            supabase.table("items").delete().eq("id", dup["id"]).execute()
+
                     # Notify the claimant
                     send_notification(
                         clm["claimant_email"],
                         f"🎉 Your claim on \"{clm['item_title']}\" has been approved! Please coordinate with the faculty to retrieve your item."
                     )
                     # Notify the original reporter
-                    original_item = items_map.get(clm.get("item_id"), {})
                     if original_item.get("reporter_email"):
                         send_notification(
                             original_item["reporter_email"],
