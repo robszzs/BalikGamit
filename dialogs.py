@@ -115,11 +115,10 @@ def item_detail_dialog(item: dict) -> None:
         f'{icon_html("file-text",14,"#374151")} Full Description</div>',
         unsafe_allow_html=True,
     )
+    note = item.get("note") or "No additional details provided."
+    # Format: replace ". " between known fields with line breaks for readability
+    formatted = note.replace("Condition: ", "<b>Condition:</b> ")                     .replace(". Status details: ", "<br><br><b>Where it is now:</b> ")                     .replace(". Additional notes:", "<br><br><b>Additional notes:</b>")                     .replace("Where it is now: ", "<b>Where it is now:</b> ")                     .replace("Additional notes: ", "<b>Additional notes:</b> ")
     st.markdown(
-        f'<div style="background:#F9FAFB;border:1px solid #E5E7EB;border-radius:10px;'
-        f'padding:14px 16px;font-size:.88rem;color:#374151;line-height:1.7;'
-        f'word-wrap:break-word;white-space:pre-wrap;">'
-        f'{item.get("note") or "No additional details provided."}'
-        f'</div>',
+        f'<div style="background:#F9FAFB;border:1px solid #E5E7EB;border-radius:10px;'        f'padding:14px 16px;font-size:.88rem;color:#374151;line-height:1.8;">'        f'{formatted}'        f'</div>',
         unsafe_allow_html=True,
     )
