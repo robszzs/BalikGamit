@@ -5,6 +5,10 @@ auth.py — Login and registration gate for BalikGamit (Supabase Version).
 import streamlit as st
 import base64
 import os
+import random
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from utils import icon, EMAIL_PATTERN, _hash
 from db import supabase
 from state import save_session_cookie
@@ -16,9 +20,53 @@ def _img_b64(filename: str) -> str:
         return base64.b64encode(f.read()).decode()
 
 
+def send_verification_email(to_email: str, code: str) -> bool:
+    """Send a 6-digit verification code to the given email."""
+    try:
+        gmail_user     = st.secrets["GMAIL_USER"]
+        gmail_password = st.secrets["GMAIL_APP_PASSWORD"]
+
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = "BalikGamit — Verify your account"
+        msg["From"]    = gmail_user
+        msg["To"]      = to_email
+
+        html = f"""
+        <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;
+                    background:#f9fafb;border-radius:12px;border:1px solid #e2e6ea;">
+          <div style="font-size:1.4rem;font-weight:800;color:#164EC6;margin-bottom:8px;">BalikGamit</div>
+          <div style="font-size:.85rem;color:#6B7280;margin-bottom:24px;">Rizal Technological University — Campus Lost & Found</div>
+          <div style="font-size:1rem;color:#111827;margin-bottom:16px;">Here is your verification code:</div>
+          <div style="font-size:2.5rem;font-weight:800;letter-spacing:.2em;color:#164EC6;
+                      background:white;border:2px solid #BFDBFE;border-radius:10px;
+                      padding:16px;text-align:center;margin-bottom:16px;">
+            {code}
+          </div>
+          <div style="font-size:.82rem;color:#6B7280;">This code expires in <strong>10 minutes</strong>. Do not share it with anyone.</div>
+        </div>
+        """
+        msg.attach(MIMEText(html, "html"))
+
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+            server.login(gmail_user, gmail_password)
+            server.sendmail(gmail_user, to_email, msg.as_string())
+        return True
+    except Exception as e:
+        st.error(f"Failed to send email: {e}")
+        return False
+
+
 def render_auth_gate() -> None:
     if "auth_tab" not in st.session_state:
         st.session_state.auth_tab = "login"
+
+    # Verification state
+    if "pending_verification" not in st.session_state:
+        st.session_state.pending_verification = None  # stores reg data while waiting for code
+    if "verification_code" not in st.session_state:
+        st.session_state.verification_code = None
+    if "code_sent_at" not in st.session_state:
+        st.session_state.code_sent_at = None
 
     logo_b64   = _img_b64("rtulogo.png")
     campus_b64 = _img_b64("rtumaincampus.png")
@@ -66,7 +114,63 @@ def render_auth_gate() -> None:
             <div style="font-size:.72rem;color:#6B7280;">Rizal Technological University</div>
           </div>
         </div>
+        """, unsafe_allow_html=True)
 
+        # ── Verification screen ───────────────────────────────────────────────
+        if st.session_state.pending_verification:
+            pv = st.session_state.pending_verification
+            st.markdown(f"""
+            <div style="margin-bottom:24px;">
+              <div style="font-size:1.8rem;font-weight:800;color:#111827;letter-spacing:-.04em;line-height:1.2;">
+                Check your email
+              </div>
+              <div style="font-size:.82rem;color:#6B7280;margin-top:6px;">
+                We sent a 6-digit code to <strong>{pv['email']}</strong>
+              </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+            with st.form("verify_form"):
+                entered_code = st.text_input("Verification Code", placeholder="Enter 6-digit code", max_chars=6)
+                verify_btn   = st.form_submit_button("Verify & Create Account", type="primary", use_container_width=True)
+
+            if verify_btn:
+                import time
+                elapsed = time.time() - st.session_state.code_sent_at
+                if elapsed > 600:
+                    st.error("Code expired. Please register again.")
+                    st.session_state.pending_verification = None
+                    st.session_state.verification_code = None
+                    st.rerun()
+                elif entered_code.strip() != st.session_state.verification_code:
+                    st.error("Incorrect code. Please try again.")
+                else:
+                    # Code is correct — create the account
+                    try:
+                        supabase.table("users").insert({
+                            "email":   pv["email"],
+                            "name":    pv["name"],
+                            "role":    "student",
+                            "pw_hash": _hash(pv["password"]),
+                            "status":  "active"
+                        }).execute()
+                        st.session_state.pending_verification = None
+                        st.session_state.verification_code    = None
+                        st.session_state.reg_success = f"Account created! You can now sign in as {pv['name']}."
+                        st.session_state.auth_tab = "login"
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Registration error: {e}")
+
+            if st.button("← Back to registration", use_container_width=True):
+                st.session_state.pending_verification = None
+                st.session_state.verification_code    = None
+                st.rerun()
+
+            st.stop()
+
+        # ── Normal tabs ───────────────────────────────────────────────────────
+        st.markdown(f"""
         <div style="margin-bottom:28px;">
           <div style="font-size:1.8rem;font-weight:800;color:#111827;letter-spacing:-.04em;line-height:1.2;">
             {"Welcome back" if st.session_state.auth_tab == "login" else "Create account"}
@@ -120,7 +224,7 @@ def render_auth_gate() -> None:
                                 st.session_state.logged_in    = True
                                 st.session_state.current_user = user
                                 st.session_state.page         = "Home"
-                                save_session_cookie(user)  # ← save to cookie
+                                save_session_cookie(user)
                                 st.rerun()
                     except Exception as e:
                         st.error(f"Database error: {e}")
@@ -132,11 +236,10 @@ def render_auth_gate() -> None:
                 reg_email = st.text_input("RTU Email", placeholder="0000-000000@rtu.edu.ph")
                 reg_pw    = st.text_input("Password", type="password")
                 reg_pw2   = st.text_input("Confirm Password", type="password")
-                reg_btn   = st.form_submit_button("Create Account", type="primary", use_container_width=True)
+                reg_btn   = st.form_submit_button("Send Verification Code", type="primary", use_container_width=True)
 
             if reg_btn:
                 email_lc = reg_email.strip().lower()
-                reg_role = "student"
                 if not reg_name.strip():
                     st.error("Please enter your full name.")
                 elif not EMAIL_PATTERN.match(email_lc):
@@ -151,16 +254,20 @@ def render_auth_gate() -> None:
                         if check.data:
                             st.error("An account with that email already exists.")
                         else:
-                            supabase.table("users").insert({
-                                "email":   email_lc,
-                                "name":    reg_name.strip(),
-                                "role":    reg_role,
-                                "pw_hash": _hash(reg_pw),
-                                "status":  "active"
-                            }).execute()
-                            st.session_state.reg_success = f"Account created! You can now sign in as {reg_name.strip()}."
-                            st.session_state.auth_tab = "login"
-                            st.rerun()
+                            # Generate and send verification code
+                            code = str(random.randint(100000, 999999))
+                            with st.spinner("Sending verification code to your email..."):
+                                sent = send_verification_email(email_lc, code)
+                            if sent:
+                                import time
+                                st.session_state.verification_code    = code
+                                st.session_state.code_sent_at         = time.time()
+                                st.session_state.pending_verification = {
+                                    "email":    email_lc,
+                                    "name":     reg_name.strip(),
+                                    "password": reg_pw,
+                                }
+                                st.rerun()
                     except Exception as e:
                         st.error(f"Registration error: {e}")
 
