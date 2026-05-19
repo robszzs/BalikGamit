@@ -154,6 +154,17 @@ def render() -> None:
 
                     try:
                         supabase.table("items").insert(new_found_record).execute()
+
+                        # Notify the original lost item reporter
+                        reporter_email = target.get("reporter_email") or target.get("contact")
+                        if reporter_email:
+                            finder_name = st.session_state.current_user.get("name", "Someone")
+                            supabase.table("notifications").insert({
+                                "user_email": reporter_email,
+                                "message": f"📍 Good news! {finder_name} reported finding your lost item \"{target['title']}\" at {found_where_now}. A coordinator will review the report shortly.",
+                                "is_read": False,
+                            }).execute()
+
                         st.session_state.found_report_for_id = None
                         st.success("Found report successfully logged for coordinator approval!")
                         st.rerun()
