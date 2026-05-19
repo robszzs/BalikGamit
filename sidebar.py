@@ -8,6 +8,7 @@ from state import is_faculty
 from db import supabase
 from dialogs import sign_out_confirm_dialog
 
+
 def render_sidebar() -> None:
     with st.sidebar:
         user     = st.session_state.current_user
@@ -26,6 +27,20 @@ def render_sidebar() -> None:
         except Exception:
             pending_count  = 0
             approved_count = 0
+
+        # ── Fetch unread notifications for current user ────────────────────
+        try:
+            notif_resp = supabase.table("notifications") \
+                .select("*") \
+                .eq("user_email", user["email"]) \
+                .eq("is_read", False) \
+                .order("created_at", desc=True) \
+                .execute()
+            unread_notifs = notif_resp.data if notif_resp.data else []
+        except Exception:
+            unread_notifs = []
+
+        unread_count = len(unread_notifs)
 
         st.markdown(f"""
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid #E2E6EA;">
@@ -55,6 +70,35 @@ def render_sidebar() -> None:
           </div>
         </div>
         """, unsafe_allow_html=True)
+
+        # ── Notifications bell ─────────────────────────────────────────────
+        if unread_count > 0:
+            st.markdown(
+                f"""<div style="background:#FFFBEB;border:1px solid #FCD34D;border-radius:10px;
+                               padding:10px 12px;margin-bottom:16px;">
+                      <div style="display:flex;align-items:center;gap:6px;font-weight:700;
+                                  font-size:.8rem;color:#92400E;margin-bottom:6px;">
+                        🔔 {unread_count} New Notification{"s" if unread_count > 1 else ""}
+                      </div>""",
+                unsafe_allow_html=True,
+            )
+            for notif in unread_notifs:
+                st.markdown(
+                    f"""<div style="font-size:.75rem;color:#374151;padding:5px 0;
+                                   border-bottom:1px solid #FDE68A;line-height:1.4;">
+                          {notif['message']}
+                        </div>""",
+                    unsafe_allow_html=True,
+                )
+            st.markdown("</div>", unsafe_allow_html=True)
+
+            if st.button("Mark all as read", use_container_width=True):
+                ids = [n["id"] for n in unread_notifs]
+                for nid in ids:
+                    supabase.table("notifications").update({"is_read": True}).eq("id", nid).execute()
+                st.rerun()
+
+            st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
 
         # Navigation page names must exactly match the routing keys in app.py
         navigation_pages = ["Home", "Browse Items", "Post an Item"]

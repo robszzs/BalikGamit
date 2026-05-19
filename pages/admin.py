@@ -9,6 +9,19 @@ from state import is_faculty
 from db import supabase
 from dialogs import create_faculty_dialog
 
+
+def send_notification(user_email: str, message: str) -> None:
+    """Insert a notification row for the given user."""
+    try:
+        supabase.table("notifications").insert({
+            "user_email": user_email,
+            "message": message,
+            "is_read": False,
+        }).execute()
+    except Exception as e:
+        st.warning(f"Could not send notification: {e}")
+
+
 def render() -> None:
     if not is_faculty():
         st.error("Access denied. This page is only available to faculty coordinators.")
@@ -22,7 +35,7 @@ def render() -> None:
     st.caption("Approve posts, manage claim requests, and keep the campus board accurate.")
     st.markdown("---")
     col_title, col_btn = st.columns([4, 1])
-    with col_btn:                             # ← must be indented to match col_title
+    with col_btn:
         if st.button("+ Faculty Account", type="primary", use_container_width=True):
             create_faculty_dialog()
 
@@ -31,7 +44,6 @@ def render() -> None:
         items_resp = supabase.table("items").select("*").execute()
         db_items = items_resp.data if items_resp.data else []
 
-        # Join claims with item title and claimant name via separate queries
         claims_resp = supabase.table("claims").select("*").execute()
         raw_claims = claims_resp.data if claims_resp.data else []
 
@@ -91,7 +103,6 @@ def render() -> None:
             st.info("No pending posts — all clear.")
         else:
             for idx, r in enumerate(pending_posts):
-                # photo_url stores base64 string directly
                 photo_bytes = None
                 if r.get("photo_url"):
                     try:
@@ -100,6 +111,7 @@ def render() -> None:
                         photo_bytes = None
 
                 reporter_label = users_map.get(r.get("reporter_email", ""), {}).get("name", r.get("reporter_email", "User"))
+                reporter_email = r.get("reporter_email", "")
 
                 if photo_bytes:
                     p_col, d_col = st.columns([1, 2])
@@ -116,10 +128,18 @@ def render() -> None:
                         btn_a, btn_r = st.columns(2)
                         if btn_a.button("Approve", key=f"approve_{idx}", type="primary", use_container_width=True):
                             supabase.table("items").update({"approved": True}).eq("id", r["id"]).execute()
+                            send_notification(
+                                reporter_email,
+                                f"✅ Your post \"{r['title']}\" has been approved and is now visible on the Campus Board!"
+                            )
                             st.toast(f"{r['title']} approved.", icon="✅")
                             st.rerun()
                         if btn_r.button("Reject", key=f"reject_{idx}", use_container_width=True):
                             supabase.table("items").delete().eq("id", r["id"]).execute()
+                            send_notification(
+                                reporter_email,
+                                f"❌ Your post \"{r['title']}\" was rejected by a coordinator."
+                            )
                             st.toast(f"{r['title']} rejected and removed.", icon="❌")
                             st.rerun()
                 else:
@@ -130,10 +150,18 @@ def render() -> None:
                     c_approve, c_reject = row[3].columns(2)
                     if c_approve.button("Approve", key=f"app_txt_{idx}", type="primary", use_container_width=True):
                         supabase.table("items").update({"approved": True}).eq("id", r["id"]).execute()
+                        send_notification(
+                            reporter_email,
+                            f"✅ Your post \"{r['title']}\" has been approved and is now visible on the Campus Board!"
+                        )
                         st.toast(f"{r['title']} approved.", icon="✅")
                         st.rerun()
                     if c_reject.button("Reject", key=f"rej_txt_{idx}", use_container_width=True):
                         supabase.table("items").delete().eq("id", r["id"]).execute()
+                        send_notification(
+                            reporter_email,
+                            f"❌ Your post \"{r['title']}\" was rejected by a coordinator."
+                        )
                         st.toast(f"{r['title']} removed.", icon="❌")
                         st.rerun()
 
@@ -165,9 +193,25 @@ def render() -> None:
                 if cb1.button("Grant", key=f"grant_{c_idx}", type="primary", use_container_width=True):
                     supabase.table("claims").update({"status": "approved"}).eq("id", clm["id"]).execute()
                     supabase.table("items").update({"status": "claimed"}).eq("id", clm["item_id"]).execute()
+                    # Notify the claimant
+                    send_notification(
+                        clm["claimant_email"],
+                        f"🎉 Your claim on \"{clm['item_title']}\" has been approved! Please coordinate with the faculty to retrieve your item."
+                    )
+                    # Notify the original reporter
+                    original_item = items_map.get(clm.get("item_id"), {})
+                    if original_item.get("reporter_email"):
+                        send_notification(
+                            original_item["reporter_email"],
+                            f"📦 Great news! Your reported item \"{clm['item_title']}\" has been claimed and returned to its owner."
+                        )
                     st.success("Item returned safely to owner!")
                     st.rerun()
                 if cb2.button("Deny", key=f"deny_{c_idx}", use_container_width=True):
                     supabase.table("claims").update({"status": "rejected"}).eq("id", clm["id"]).execute()
+                    send_notification(
+                        clm["claimant_email"],
+                        f"❌ Your claim on \"{clm['item_title']}\" was denied by a coordinator. You may submit a new claim with more proof."
+                    )
                     st.toast("Claim ticket denied.")
                     st.rerun()
