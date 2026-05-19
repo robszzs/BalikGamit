@@ -17,6 +17,8 @@ def sign_out_confirm_dialog() -> None:
             st.rerun()
     with col_confirm:
         if st.button("Sign Out", use_container_width=True, type="primary"):
+            from state import clear_session_cookie
+            clear_session_cookie()  # ← clear the cookie on sign out
             st.session_state.logged_in    = False
             st.session_state.current_user = None
             st.session_state.page         = "Home"

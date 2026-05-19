@@ -1,3 +1,4 @@
 supabase
 streamlit
-pillow
+Pillow
+streamlit-cookies-controller

@@ -7,6 +7,7 @@ import base64
 import os
 from utils import icon, EMAIL_PATTERN, _hash
 from db import supabase
+from state import save_session_cookie
 
 
 def _img_b64(filename: str) -> str:
@@ -111,13 +112,15 @@ def render_auth_gate() -> None:
                             if user_data["pw_hash"] != _hash(login_pw):
                                 st.error("Incorrect password.")
                             else:
-                                st.session_state.logged_in    = True
-                                st.session_state.current_user = {
+                                user = {
                                     "email": email_lc,
                                     "name":  user_data["name"],
                                     "role":  user_data["role"]
                                 }
-                                st.session_state.page = "Home"
+                                st.session_state.logged_in    = True
+                                st.session_state.current_user = user
+                                st.session_state.page         = "Home"
+                                save_session_cookie(user)  # ← save to cookie
                                 st.rerun()
                     except Exception as e:
                         st.error(f"Database error: {e}")
