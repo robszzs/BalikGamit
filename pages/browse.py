@@ -19,11 +19,13 @@ def render() -> None:
         unsafe_allow_html=True,
     )
     st.title("Campus Board")
-    st.caption(
-        "Only admin-approved items are shown here. "
-        "Found items: click Submit a Claim if you're the owner. "
-        "Lost items: click I Found This if you've seen it."
-    )
+    st.markdown("""
+<div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:8px;">
+  <span style="font-size:.82rem;color:#6B7280;">✅ <strong>Approved items only</strong></span>
+  <span style="font-size:.82rem;color:#6B7280;">📦 Found something? Click <strong>I Found This</strong></span>
+  <span style="font-size:.82rem;color:#6B7280;">🔍 Your item here? Click <strong>Claim Item</strong></span>
+</div>
+""", unsafe_allow_html=True)
     st.markdown("---")
 
     # ── Safe Session Fallbacks ────────────────────────────────────────────────
