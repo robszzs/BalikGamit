@@ -34,11 +34,17 @@ st.set_page_config(
 # ─── Global CSS ───────────────────────────────────────────────────────────────
 inject_styles()
 
-# ─── Cookie controller (must be instantiated early, before init_state) ────────
+# ─── Cookie controller ────────────────────────────────────────────────────────
 controller = CookieController()
 
-# ─── Restore session from cookie BEFORE init_state runs ──────────────────────
-if "logged_in" not in st.session_state:
+# ─── Cookie restore with two-pass render ─────────────────────────────────────
+# On first load, cookies aren't ready yet — we mark that we need to check,
+# then rerun once so the cookie controller has time to hydrate.
+if "cookie_checked" not in st.session_state:
+    st.session_state.cookie_checked = False
+
+if not st.session_state.cookie_checked:
+    st.session_state.cookie_checked = True
     try:
         cookie_val = controller.get("balikgamit_session")
         if cookie_val:
@@ -46,9 +52,10 @@ if "logged_in" not in st.session_state:
             if user_data.get("email") and user_data.get("name") and user_data.get("role"):
                 st.session_state.logged_in    = True
                 st.session_state.current_user = user_data
-                st.session_state.page         = "Home"
+                st.session_state.page         = st.session_state.get("page", "Home")
     except Exception:
         pass
+    st.rerun()
 
 # ─── Session state defaults ───────────────────────────────────────────────────
 init_state()
@@ -66,12 +73,9 @@ page = st.session_state.page
 
 if page == "Home":
     home.render()
-
 elif page == "Browse Items":
     browse.render()
-
 elif page == "Post an Item":
     post_item.render()
-
 elif page == "Admin Dashboard":
     admin.render()
