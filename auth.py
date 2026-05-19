@@ -6,9 +6,7 @@ import streamlit as st
 import base64
 import os
 import random
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+import resend
 from utils import icon, EMAIL_PATTERN, _hash
 from db import supabase
 from state import save_session_cookie
@@ -21,16 +19,9 @@ def _img_b64(filename: str) -> str:
 
 
 def send_verification_email(to_email: str, code: str) -> bool:
-    """Send a 6-digit verification code to the given email."""
+    """Send a 6-digit verification code using Resend."""
     try:
-        gmail_user     = st.secrets["GMAIL_USER"]
-        gmail_password = st.secrets["GMAIL_APP_PASSWORD"]
-
-        msg = MIMEMultipart("alternative")
-        msg["Subject"] = "BalikGamit — Verify your account"
-        msg["From"]    = gmail_user
-        msg["To"]      = to_email
-
+        resend.api_key = st.secrets["RESEND_API_KEY"]
         html = f"""
         <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;
                     background:#f9fafb;border-radius:12px;border:1px solid #e2e6ea;">
@@ -45,17 +36,17 @@ def send_verification_email(to_email: str, code: str) -> bool:
           <div style="font-size:.82rem;color:#6B7280;">This code expires in <strong>10 minutes</strong>. Do not share it with anyone.</div>
         </div>
         """
-        msg.attach(MIMEText(html, "html"))
-
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-            server.login(gmail_user, gmail_password)
-            server.sendmail(gmail_user, to_email, msg.as_string())
+        params = {
+            "from": "BalikGamit <onboarding@resend.dev>",
+            "to": [to_email],
+            "subject": "BalikGamit — Verify your account",
+            "html": html,
+        }
+        resend.Emails.send(params)
         return True
     except Exception as e:
         st.error(f"Failed to send email: {e}")
         return False
-
-
 def render_auth_gate() -> None:
     if "auth_tab" not in st.session_state:
         st.session_state.auth_tab = "login"
