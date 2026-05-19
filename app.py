@@ -4,7 +4,9 @@ Main entry point. Run with: streamlit run app.py
 """
 
 import base64
+import json
 import streamlit as st
+from streamlit_cookies_controller import CookieController
 
 from utils import icon
 from styles import inject_styles
@@ -32,13 +34,29 @@ st.set_page_config(
 # ─── Global CSS ───────────────────────────────────────────────────────────────
 inject_styles()
 
+# ─── Cookie controller (must be instantiated early, before init_state) ────────
+controller = CookieController()
+
+# ─── Restore session from cookie BEFORE init_state runs ──────────────────────
+if "logged_in" not in st.session_state:
+    try:
+        cookie_val = controller.get("balikgamit_session")
+        if cookie_val:
+            user_data = json.loads(cookie_val)
+            if user_data.get("email") and user_data.get("name") and user_data.get("role"):
+                st.session_state.logged_in    = True
+                st.session_state.current_user = user_data
+                st.session_state.page         = "Home"
+    except Exception:
+        pass
+
 # ─── Session state defaults ───────────────────────────────────────────────────
 init_state()
 
 # ─── Auth gate ────────────────────────────────────────────────────────────────
 if not st.session_state.logged_in:
     st.markdown("<style>[data-testid='stSidebar'] {display: none;}</style>", unsafe_allow_html=True)
-    render_auth_gate()          # calls st.stop() internally          # calls st.stop() internally
+    render_auth_gate()
 
 # ─── Sidebar navigation ───────────────────────────────────────────────────────
 render_sidebar()
