@@ -2,4 +2,3 @@ supabase
 streamlit
 Pillow
 streamlit-cookies-controller
-resend 
