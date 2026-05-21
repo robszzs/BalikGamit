@@ -30,11 +30,10 @@ def render_auth_gate() -> None:
         <style>
           [data-testid="stMain"] > div:first-child {{ padding-top: 0 !important; }}
         </style>
-        <div style="position:relative;height:100vh;min-height:500px;overflow:hidden;
-                    border-radius:20px;">
+        <div style="position:relative;height:100vh;min-height:500px;overflow:hidden;">
           <img src="data:image/png;base64,{campus_b64}"
-               style="width:100%;height:100%;object-fit:cover;display:block;border-radius:20px;" />
-          <div style="position:absolute;inset:0;border-radius:20px;background:linear-gradient(to bottom,
+               style="width:100%;height:100%;object-fit:cover;display:block;" />
+          <div style="position:absolute;inset:0;background:linear-gradient(to bottom,
                rgba(22,48,120,0.45) 0%, rgba(22,48,120,0.25) 50%, rgba(10,25,80,0.75) 100%);">
           </div>
           <div style="position:absolute;bottom:48px;left:40px;right:40px;">
