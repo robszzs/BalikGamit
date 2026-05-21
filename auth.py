@@ -25,16 +25,16 @@ def render_auth_gate() -> None:
 
     left_col, right_col = st.columns([5, 6])
 
+
     with right_col:
         st.markdown(f"""
         <style>
         [data-testid="stMain"] > div:first-child {{ padding-top: 0 !important; }}
         [data-testid="column"]:last-child {{ padding: 16px 16px 16px 8px !important; }}
         </style>
-        <div style="position:relative;height:100vh;min-height:500px;overflow:hidden;
-                    border-radius:20px;">
+        <div style="position:relative;height:520px;min-height:520px;overflow:hidden;border-radius:20px;">
           <img src="data:image/png;base64,{campus_b64}"
-               style="width:100%;height:100%;object-fit:cover;display:block;border-radius:20px;" />
+               sstyle="width:100%;height:520px;object-fit:cover;display:block;border-radius:20px;" >
           <div style="position:absolute;inset:0;border-radius:20px;background:linear-gradient(to bottom,
                rgba(22,48,120,0.45) 0%, rgba(22,48,120,0.25) 50%, rgba(10,25,80,0.75) 100%);">
           </div>
