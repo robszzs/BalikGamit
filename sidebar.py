@@ -9,6 +9,34 @@ from db import supabase
 from dialogs import sign_out_confirm_dialog
 
 
+def ask_groq(messages: list) -> str:
+    """Send messages to Groq and return the assistant's reply."""
+    try:
+        from groq import Groq
+        client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+        response = client.chat.completions.create(
+            model="llama3-8b-8192",
+            messages=messages,
+            max_tokens=500,
+            temperature=0.7,
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        return f"Sorry, I couldn't process that. ({e})"
+
+
+SYSTEM_PROMPT = """You are BalikGamit Assistant, a helpful AI for RTU's Campus Lost & Found system.
+You help students and faculty with questions about:
+- How to report lost or found items
+- How to claim an item
+- How the approval process works
+- How notifications work
+- General tips for recovering lost items on campus
+
+Keep answers short, friendly, and helpful. If asked something unrelated to lost and found or the app, politely redirect them.
+The app is called BalikGamit and is used at Rizal Technological University (RTU)."""
+
+
 def render_sidebar() -> None:
     with st.sidebar:
         user     = st.session_state.current_user
@@ -100,7 +128,7 @@ def render_sidebar() -> None:
 
             st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
 
-        # Navigation page names must exactly match the routing keys in app.py
+        # ── Navigation ─────────────────────────────────────────────────────
         navigation_pages = ["Home", "Browse Items", "Post an Item"]
         if is_faculty():
             navigation_pages.append("Admin Dashboard")
@@ -134,3 +162,52 @@ def render_sidebar() -> None:
         st.markdown("---")
         if st.button("Sign Out", use_container_width=True):
             sign_out_confirm_dialog()
+
+        # ── AI Chat Assistant ──────────────────────────────────────────────
+        st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
+        st.markdown("""
+        <div style="display:flex;align-items:center;gap:6px;font-size:.68rem;font-weight:700;
+                    text-transform:uppercase;letter-spacing:.1em;color:#164EC6;margin-bottom:8px;">
+          🤖 BalikGamit Assistant
+        </div>
+        """, unsafe_allow_html=True)
+
+        # Initialize chat history
+        if "chat_history" not in st.session_state:
+            st.session_state.chat_history = []
+
+        # Display chat messages
+        if st.session_state.chat_history:
+            for msg in st.session_state.chat_history[-4:]:  # show last 4 messages
+                if msg["role"] == "user":
+                    st.markdown(f"""
+                    <div style="background:#EEF3FF;border-radius:10px 10px 2px 10px;
+                                padding:8px 10px;margin-bottom:4px;font-size:.78rem;
+                                color:#111827;text-align:right;">
+                      {msg['content']}
+                    </div>""", unsafe_allow_html=True)
+                else:
+                    st.markdown(f"""
+                    <div style="background:#F3F4F6;border-radius:10px 10px 10px 2px;
+                                padding:8px 10px;margin-bottom:4px;font-size:.78rem;
+                                color:#374151;">
+                      {msg['content']}
+                    </div>""", unsafe_allow_html=True)
+
+        # Chat input
+        with st.form("chat_form", clear_on_submit=True):
+            user_input = st.text_input("", placeholder="Ask me anything...", label_visibility="collapsed")
+            send_btn   = st.form_submit_button("Send", use_container_width=True)
+
+        if send_btn and user_input.strip():
+            st.session_state.chat_history.append({"role": "user", "content": user_input.strip()})
+            messages = [{"role": "system", "content": SYSTEM_PROMPT}] + st.session_state.chat_history
+            with st.spinner("Thinking..."):
+                reply = ask_groq(messages)
+            st.session_state.chat_history.append({"role": "assistant", "content": reply})
+            st.rerun()
+
+        if st.session_state.chat_history:
+            if st.button("Clear chat", use_container_width=True):
+                st.session_state.chat_history = []
+                st.rerun()
