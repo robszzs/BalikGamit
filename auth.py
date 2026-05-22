@@ -5,6 +5,10 @@ auth.py — Login and registration gate for BalikGamit (Supabase Version).
 import streamlit as st
 import base64
 import os
+import secrets
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from utils import icon, EMAIL_PATTERN, _hash
 from db import supabase
 from state import save_session_cookie
@@ -14,6 +18,42 @@ def _img_b64(filename: str) -> str:
     path = os.path.join(os.path.dirname(__file__), "assets", filename)
     with open(path, "rb") as f:
         return base64.b64encode(f.read()).decode()
+
+
+def _send_verification_email(to_email: str, token: str, name: str) -> bool:
+    """Send a verification email via Gmail SMTP. Returns True if successful."""
+    try:
+        gmail_user     = st.secrets["GMAIL_USER"]
+        gmail_password = st.secrets["GMAIL_APP_PASSWORD"]
+
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = "BalikGamit — Verify your email"
+        msg["From"]    = f"BalikGamit <{gmail_user}>"
+        msg["To"]      = to_email
+
+        html = f"""
+        <div style="font-family:sans-serif;max-width:480px;margin:auto;">
+          <h2 style="color:#164EC6;">Welcome to BalikGamit, {name}!</h2>
+          <p>Your verification code is:</p>
+          <div style="font-size:2rem;font-weight:800;letter-spacing:.2em;
+                      background:#F3F4F6;padding:16px 24px;border-radius:8px;
+                      text-align:center;color:#111827;">{token}</div>
+          <p style="color:#6B7280;font-size:.85rem;margin-top:16px;">
+            Enter this code on the BalikGamit registration page to activate your account.
+            This code expires after 24 hours.
+          </p>
+        </div>
+        """
+        msg.attach(MIMEText(html, "html"))
+
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+            server.login(gmail_user, gmail_password)
+            server.sendmail(gmail_user, to_email, msg.as_string())
+
+        return True
+    except Exception as e:
+        st.error(f"Failed to send verification email: {e}")
+        return False
 
 
 def render_auth_gate() -> None:
@@ -113,6 +153,11 @@ def render_auth_gate() -> None:
                             user_data = response.data[0]
                             if user_data["pw_hash"] != _hash(login_pw):
                                 st.error("Incorrect password.")
+                            elif user_data.get("verify_token") is not None:
+                                st.warning("Please verify your email before logging in. Check your inbox for the verification code.")
+                                st.session_state.auth_tab     = "verify"
+                                st.session_state.verify_email = email_lc
+                                st.rerun()
                             else:
                                 user = {
                                     "email": email_lc,
@@ -127,7 +172,47 @@ def render_auth_gate() -> None:
                     except Exception as e:
                         st.error(f"Database error: {e}")
 
+        elif st.session_state.auth_tab == "verify":
+            # ── Email verification step ───────────────────────────────────────
+            verify_email = st.session_state.get("verify_email", "")
+            st.info(f"A verification code was sent to **{verify_email}**. Enter it below.")
+
+            with st.form("verify_form"):
+                entered_token = st.text_input("Verification Code", placeholder="Enter the 6-digit code")
+                verify_btn    = st.form_submit_button("Verify Email", type="primary", use_container_width=True)
+
+            if verify_btn:
+                try:
+                    result = supabase.table("users").select("verify_token, name, role").eq("email", verify_email).execute()
+                    if not result.data:
+                        st.error("Account not found.")
+                    else:
+                        user_data = result.data[0]
+                        if entered_token.strip() == user_data["verify_token"]:
+                            # Clear the token → account is now verified
+                            supabase.table("users").update({"verify_token": None}).eq("email", verify_email).execute()
+                            st.session_state.reg_success = f"Email verified! Welcome, {user_data['name']}. You can now sign in."
+                            st.session_state.auth_tab    = "login"
+                            st.session_state.pop("verify_email", None)
+                            st.rerun()
+                        else:
+                            st.error("Incorrect code. Please check your email and try again.")
+                except Exception as e:
+                    st.error(f"Verification error: {e}")
+
+            if st.button("Resend verification email", use_container_width=True):
+                try:
+                    result = supabase.table("users").select("name, verify_token").eq("email", verify_email).execute()
+                    if result.data:
+                        token = result.data[0]["verify_token"]
+                        name  = result.data[0]["name"]
+                        if _send_verification_email(verify_email, token, name):
+                            st.success("Verification email resent! Check your inbox.")
+                except Exception as e:
+                    st.error(f"Error resending email: {e}")
+
         else:
+            # ── Registration step ─────────────────────────────────────────────
             st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
             with st.form("reg_form"):
                 reg_name  = st.text_input("Full Name", placeholder="e.g. Juan dela Cruz")
@@ -152,16 +237,23 @@ def render_auth_gate() -> None:
                         if check.data:
                             st.error("An account with that email already exists.")
                         else:
+                            token = secrets.token_hex(3).upper()  # 6-character hex code e.g. "A3F9C1"
                             supabase.table("users").insert({
-                                "email":   email_lc,
-                                "name":    reg_name.strip(),
-                                "role":    "student",
-                                "pw_hash": _hash(reg_pw),
-                                "status":  "active"
+                                "email":        email_lc,
+                                "name":         reg_name.strip(),
+                                "role":         "student",
+                                "pw_hash":      _hash(reg_pw),
+                                "status":       "active",
+                                "verify_token": token,
                             }).execute()
-                            st.session_state.reg_success = f"Account created! You can now sign in as {reg_name.strip()}."
-                            st.session_state.auth_tab = "login"
-                            st.rerun()
+                            if _send_verification_email(email_lc, token, reg_name.strip()):
+                                st.session_state.auth_tab     = "verify"
+                                st.session_state.verify_email = email_lc
+                                st.rerun()
+                            else:
+                                # Email failed — clean up the inserted row
+                                supabase.table("users").delete().eq("email", email_lc).execute()
+                                st.error("Could not send verification email. Please try again.")
                     except Exception as e:
                         st.error(f"Registration error: {e}")
 
