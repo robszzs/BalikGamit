@@ -15,7 +15,7 @@ def ask_groq(messages: list) -> str:
         from groq import Groq
         client = Groq(api_key=st.secrets["GROQ_API_KEY"])
         response = client.chat.completions.create(
-            model="llama3-8b-8192",
+            model="llama-3.3-70b-versatile",
             messages=messages,
             max_tokens=500,
             temperature=0.7,
