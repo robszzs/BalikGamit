@@ -15,7 +15,7 @@ def ask_groq(messages: list) -> str:
         from groq import Groq
         client = Groq(api_key=st.secrets["GROQ_API_KEY"])
         response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="llama3-8b-8192",
             messages=messages,
             max_tokens=500,
             temperature=0.7,
@@ -200,12 +200,17 @@ def render_sidebar() -> None:
             send_btn   = st.form_submit_button("Send", use_container_width=True)
 
         if send_btn and user_input.strip():
-            st.session_state.chat_history.append({"role": "user", "content": user_input.strip()})
-            messages = [{"role": "system", "content": SYSTEM_PROMPT}] + st.session_state.chat_history
-            with st.spinner("Thinking..."):
-                reply = ask_groq(messages)
-            st.session_state.chat_history.append({"role": "assistant", "content": reply})
-            st.rerun()
+            from better_profanity import profanity
+            profanity.load_censor_words()
+            if profanity.contains_profanity(user_input.strip()):
+                st.error("⚠️ Please keep your messages respectful.")
+            else:
+                st.session_state.chat_history.append({"role": "user", "content": user_input.strip()})
+                messages = [{"role": "system", "content": SYSTEM_PROMPT}] + st.session_state.chat_history
+                with st.spinner("Thinking..."):
+                    reply = ask_groq(messages)
+                st.session_state.chat_history.append({"role": "assistant", "content": reply})
+                st.rerun()
 
         if st.session_state.chat_history:
             if st.button("Clear chat", use_container_width=True):
