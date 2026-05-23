@@ -6,9 +6,7 @@ Main entry point. Run with: streamlit run app.py
 import base64
 import json
 import streamlit as st
-from streamlit_cookies_controller import CookieController
 
-from utils import icon
 from styles import inject_styles
 from state import init_state
 from auth import render_auth_gate
@@ -34,42 +32,22 @@ st.set_page_config(
 # ─── Global CSS ───────────────────────────────────────────────────────────────
 inject_styles()
 
-# ─── Single shared CookieController ──────────────────────────────────────────
-# Always render it at the top so it hydrates every run.
-controller = CookieController()
-
-# Store it in session_state so state.py / auth.py / sidebar.py can reuse it
-# without creating a second instance.
-st.session_state["_cookie_controller"] = controller
-
 # ─── Session state defaults ───────────────────────────────────────────────────
 init_state()
 
-# ─── Cookie restore (two-pass) ────────────────────────────────────────────────
-# Pass 1: component hasn't hydrated yet — just rerun to give it a cycle.
-# Pass 2: now we can safely read cookies.
-# Pass 3+: normal render.
-if "cookie_pass" not in st.session_state:
-    st.session_state.cookie_pass = 1
-    st.rerun()
-
-if st.session_state.cookie_pass == 1 and not st.session_state.logged_in:
-    st.session_state.cookie_pass = 2
+# ─── Restore session from query params (survives reload) ──────────────────────
+if not st.session_state.logged_in:
     try:
-        cookie_val = controller.get("balikgamit_session")
-        if cookie_val:
-            user_data = json.loads(cookie_val)
+        params = st.query_params
+        raw = params.get("s")
+        if raw:
+            user_data = json.loads(base64.b64decode(raw).decode())
             if user_data.get("email") and user_data.get("name") and user_data.get("role"):
                 st.session_state.logged_in    = True
                 st.session_state.current_user = user_data
                 st.session_state.page         = st.session_state.get("page", "Home")
     except Exception:
         pass
-    st.rerun()
-
-# Mark pass done
-if st.session_state.cookie_pass == 1:
-    st.session_state.cookie_pass = 2
 
 # ─── Auth gate ────────────────────────────────────────────────────────────────
 if not st.session_state.logged_in:

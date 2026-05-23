@@ -3,13 +3,9 @@ state.py — Session state initialization for BalikGamit (Supabase Connected).
 Call init_state() once at app startup.
 """
 
-import streamlit as st
+import base64
 import json
-
-
-def get_cookie_controller():
-    """Return the single CookieController created in app.py."""
-    return st.session_state.get("_cookie_controller")
+import streamlit as st
 
 
 def init_state() -> None:
@@ -31,23 +27,24 @@ def init_state() -> None:
 
 
 def save_session_cookie(user: dict) -> None:
-    """Save the logged-in user to a browser cookie."""
+    """Persist the logged-in user in the URL query param so reloads restore the session."""
     try:
-        controller = get_cookie_controller()
-        if controller:
-            controller.set("balikgamit_session", json.dumps(user), max_age=60 * 60 * 24 * 7)  # 7 days
+        encoded = base64.b64encode(json.dumps(user).encode()).decode()
+        st.query_params["s"] = encoded
     except Exception:
         pass
 
 
 def clear_session_cookie() -> None:
-    """Remove the session cookie on sign out."""
+    """Remove the session query param on sign out."""
     try:
-        controller = get_cookie_controller()
-        if controller:
-            controller.remove("balikgamit_session")
+        st.query_params.clear()
     except Exception:
         pass
+
+
+def get_cookie_controller():
+    return None  # no longer used
 
 
 def is_faculty() -> bool:
