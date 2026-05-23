@@ -1,6 +1,5 @@
 supabase
 streamlit
 Pillow
-streamlit-cookies-controller
 groq
 better-profanity

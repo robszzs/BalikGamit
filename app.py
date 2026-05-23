@@ -14,7 +14,6 @@ from sidebar import render_sidebar
 from pages import home, browse, post_item, admin
 
 
-# ─── Page config (must be first Streamlit call) ───────────────────────────────
 st.set_page_config(
     page_title="BalikGamit — Campus Lost & Found",
     page_icon=(
@@ -29,38 +28,33 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ─── Global CSS ───────────────────────────────────────────────────────────────
 inject_styles()
-
-# ─── Session state defaults ───────────────────────────────────────────────────
 init_state()
 
-# ─── Restore session from query param ────────────────────────────────────────
-# After login, save_session_cookie() puts ?s=<base64> in the URL.
-# On reload the browser keeps the URL so we read it back here.
+# ── Restore session from ?s= query param ──────────────────────────────────────
+# save_session_cookie() writes ?s=<base64 user json> into the URL after login.
+# The browser keeps the full URL on reload, so we can always read it back.
+# We do NOT clear it — keeping it in the URL is what makes reload work.
 if not st.session_state.logged_in:
-    raw = st.query_params.get("s")
-    if raw and raw != "none":
+    raw = st.query_params.get("s", "")
+    if raw:
         try:
             user_data = json.loads(base64.b64decode(raw).decode())
             if user_data.get("email") and user_data.get("name") and user_data.get("role"):
                 st.session_state.logged_in    = True
                 st.session_state.current_user = user_data
-                st.session_state.page         = "Home"
+                st.session_state.page         = st.session_state.get("page", "Home")
         except Exception:
             pass
 
-# ─── Auth gate ────────────────────────────────────────────────────────────────
+# ── Auth gate ─────────────────────────────────────────────────────────────────
 if not st.session_state.logged_in:
     st.markdown("<style>[data-testid='stSidebar'] {display: none;}</style>", unsafe_allow_html=True)
     render_auth_gate()
 
-# ─── Sidebar navigation ───────────────────────────────────────────────────────
 render_sidebar()
 
-# ─── Page routing ─────────────────────────────────────────────────────────────
 page = st.session_state.page
-
 if page == "Home":
     home.render()
 elif page == "Browse Items":

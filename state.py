@@ -25,7 +25,9 @@ def init_state() -> None:
 
 
 def save_session_cookie(user: dict) -> None:
-    """Encode user data into the URL query param — survives page reload."""
+    """Write user data into the URL as ?s=<base64>. Survives reload because
+    the browser keeps the full URL. Do NOT call st.query_params.clear() after
+    restoring or you will break the reload."""
     try:
         encoded = base64.b64encode(json.dumps(user).encode()).decode()
         st.query_params["s"] = encoded
@@ -34,7 +36,7 @@ def save_session_cookie(user: dict) -> None:
 
 
 def clear_session_cookie() -> None:
-    """Clear the session query param on logout."""
+    """Remove ?s= from the URL on logout."""
     try:
         st.query_params.clear()
     except Exception:
