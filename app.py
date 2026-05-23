@@ -34,22 +34,26 @@ st.set_page_config(
 # ─── Global CSS ───────────────────────────────────────────────────────────────
 inject_styles()
 
-# ─── Cookie controller ────────────────────────────────────────────────────────
+# ─── Single shared CookieController ──────────────────────────────────────────
+# Always render it at the top so it hydrates every run.
 controller = CookieController()
 
-# ─── Cookie restore with two-pass render ─────────────────────────────────────
-# streamlit_cookies_controller needs one full render cycle to hydrate from
-# the browser before its .get() calls return real values.
-#
-# Pass 0 → "cookie_pass" not in session_state  → set to 1, rerun (let it hydrate)
-# Pass 1 → cookie_pass == 1                    → read cookie, set to 2, rerun
-# Pass 2+ → cookie_pass == 2                   → normal app render
+# Store it in session_state so state.py / auth.py / sidebar.py can reuse it
+# without creating a second instance.
+st.session_state["_cookie_controller"] = controller
 
+# ─── Session state defaults ───────────────────────────────────────────────────
+init_state()
+
+# ─── Cookie restore (two-pass) ────────────────────────────────────────────────
+# Pass 1: component hasn't hydrated yet — just rerun to give it a cycle.
+# Pass 2: now we can safely read cookies.
+# Pass 3+: normal render.
 if "cookie_pass" not in st.session_state:
     st.session_state.cookie_pass = 1
     st.rerun()
 
-if st.session_state.cookie_pass == 1:
+if st.session_state.cookie_pass == 1 and not st.session_state.logged_in:
     st.session_state.cookie_pass = 2
     try:
         cookie_val = controller.get("balikgamit_session")
@@ -63,8 +67,9 @@ if st.session_state.cookie_pass == 1:
         pass
     st.rerun()
 
-# ─── Session state defaults ───────────────────────────────────────────────────
-init_state()
+# Mark pass done
+if st.session_state.cookie_pass == 1:
+    st.session_state.cookie_pass = 2
 
 # ─── Auth gate ────────────────────────────────────────────────────────────────
 if not st.session_state.logged_in:
