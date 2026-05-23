@@ -6,6 +6,7 @@ Call init_state() once at app startup.
 import base64
 import json
 import streamlit as st
+import streamlit.components.v1 as components
 
 
 def init_state() -> None:
@@ -27,18 +28,26 @@ def init_state() -> None:
 
 
 def save_session_cookie(user: dict) -> None:
-    """Persist the logged-in user in the URL query param so reloads restore the session."""
+    """Save the logged-in user to localStorage via JS."""
     try:
         encoded = base64.b64encode(json.dumps(user).encode()).decode()
-        st.query_params["s"] = encoded
+        components.html(f"""
+            <script>
+                localStorage.setItem('balikgamit_session', '{encoded}');
+            </script>
+        """, height=0)
     except Exception:
         pass
 
 
 def clear_session_cookie() -> None:
-    """Remove the session query param on sign out."""
+    """Remove the session from localStorage on sign out."""
     try:
-        st.query_params.clear()
+        components.html("""
+            <script>
+                localStorage.removeItem('balikgamit_session');
+            </script>
+        """, height=0)
     except Exception:
         pass
 
