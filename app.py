@@ -12,7 +12,9 @@ from state import init_state
 from auth import render_auth_gate
 from sidebar import render_sidebar
 from pages import home, browse, post_item, admin
+from db import supabase
 
+VALID_PAGES = {"Home", "Browse Items", "Post an Item", "Admin Dashboard"}
 
 st.set_page_config(
     page_title="BalikGamit — Campus Lost & Found",
@@ -31,20 +33,24 @@ st.set_page_config(
 inject_styles()
 init_state()
 
-VALID_PAGES = {"Home", "Browse Items", "Post an Item", "Admin Dashboard"}
-
-# ── Restore session and page from URL query params ────────────────────────────
+# ── Restore session from token in URL ─────────────────────────────────────────
+# ?t=<random token> is looked up in Supabase sessions table.
+# If not found (logged out / expired), the token is worthless → login page.
 if not st.session_state.logged_in:
-    raw = st.query_params.get("s", "")
-    if raw:
+    token = st.query_params.get("t", "")
+    if token:
         try:
-            user_data = json.loads(base64.b64decode(raw).decode())
-            if user_data.get("email") and user_data.get("name") and user_data.get("role"):
-                st.session_state.logged_in    = True
-                st.session_state.current_user = user_data
-                # Restore page from URL, fall back to Home
-                p = st.query_params.get("p", "Home")
-                st.session_state.page = p if p in VALID_PAGES else "Home"
+            result = supabase.table("sessions").select("user_data").eq("token", token).execute()
+            if result.data:
+                user_data = json.loads(result.data[0]["user_data"])
+                if user_data.get("email") and user_data.get("name") and user_data.get("role"):
+                    st.session_state.logged_in    = True
+                    st.session_state.current_user = user_data
+                    p = st.query_params.get("p", "Home")
+                    st.session_state.page = p if p in VALID_PAGES else "Home"
+            else:
+                # Token not in DB (was logged out) — clear URL and show login
+                st.query_params.clear()
         except Exception:
             pass
 

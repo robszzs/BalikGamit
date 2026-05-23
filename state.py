@@ -2,9 +2,10 @@
 state.py — Session state initialization for BalikGamit.
 """
 
-import base64
 import json
+import secrets
 import streamlit as st
+from db import supabase
 
 
 def init_state() -> None:
@@ -25,16 +26,21 @@ def init_state() -> None:
 
 
 def save_session_cookie(user: dict) -> None:
-    """Write user data into the URL as ?s=<base64>."""
+    """Create a random token, store it in Supabase, put it in the URL."""
     try:
-        encoded = base64.b64encode(json.dumps(user).encode()).decode()
-        st.query_params["s"] = encoded
+        token = secrets.token_urlsafe(32)
+        supabase.table("sessions").insert({
+            "token": token,
+            "user_data": json.dumps(user),
+        }).execute()
+        st.query_params["t"] = token
+        st.query_params["p"] = st.session_state.get("page", "Home")
     except Exception:
         pass
 
 
 def save_page(page: str) -> None:
-    """Keep the current page in the URL so reload lands on the same tab."""
+    """Keep the current page in the URL."""
     try:
         st.query_params["p"] = page
     except Exception:
@@ -42,8 +48,11 @@ def save_page(page: str) -> None:
 
 
 def clear_session_cookie() -> None:
-    """Remove session from URL on logout."""
+    """Delete the token from Supabase so the link is dead, then clear URL."""
     try:
+        token = st.query_params.get("t", "")
+        if token:
+            supabase.table("sessions").delete().eq("token", token).execute()
         st.query_params.clear()
     except Exception:
         pass
