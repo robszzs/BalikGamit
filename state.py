@@ -25,9 +25,7 @@ def init_state() -> None:
 
 
 def save_session_cookie(user: dict) -> None:
-    """Write user data into the URL as ?s=<base64>. Survives reload because
-    the browser keeps the full URL. Do NOT call st.query_params.clear() after
-    restoring or you will break the reload."""
+    """Write user data into the URL as ?s=<base64>."""
     try:
         encoded = base64.b64encode(json.dumps(user).encode()).decode()
         st.query_params["s"] = encoded
@@ -35,8 +33,16 @@ def save_session_cookie(user: dict) -> None:
         pass
 
 
+def save_page(page: str) -> None:
+    """Keep the current page in the URL so reload lands on the same tab."""
+    try:
+        st.query_params["p"] = page
+    except Exception:
+        pass
+
+
 def clear_session_cookie() -> None:
-    """Remove ?s= from the URL on logout."""
+    """Remove session from URL on logout."""
     try:
         st.query_params.clear()
     except Exception:

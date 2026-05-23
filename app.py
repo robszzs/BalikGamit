@@ -31,10 +31,9 @@ st.set_page_config(
 inject_styles()
 init_state()
 
-# ── Restore session from ?s= query param ──────────────────────────────────────
-# save_session_cookie() writes ?s=<base64 user json> into the URL after login.
-# The browser keeps the full URL on reload, so we can always read it back.
-# We do NOT clear it — keeping it in the URL is what makes reload work.
+VALID_PAGES = {"Home", "Browse Items", "Post an Item", "Admin Dashboard"}
+
+# ── Restore session and page from URL query params ────────────────────────────
 if not st.session_state.logged_in:
     raw = st.query_params.get("s", "")
     if raw:
@@ -43,7 +42,9 @@ if not st.session_state.logged_in:
             if user_data.get("email") and user_data.get("name") and user_data.get("role"):
                 st.session_state.logged_in    = True
                 st.session_state.current_user = user_data
-                st.session_state.page         = st.session_state.get("page", "Home")
+                # Restore page from URL, fall back to Home
+                p = st.query_params.get("p", "Home")
+                st.session_state.page = p if p in VALID_PAGES else "Home"
         except Exception:
             pass
 

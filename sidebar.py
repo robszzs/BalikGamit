@@ -141,6 +141,7 @@ def render_sidebar() -> None:
                 if st.button(btn_label, key=f"nav_{pg}", use_container_width=True,
                              type="primary" if is_active else "secondary"):
                     st.session_state.page = pg
+                    from state import save_page; save_page(pg)
                     st.rerun()
 
                 if pending_count > 0:
@@ -156,6 +157,7 @@ def render_sidebar() -> None:
                 if st.button(btn_label, key=f"nav_{pg}", use_container_width=True,
                              type="primary" if is_active else "secondary"):
                     st.session_state.page = pg
+                    from state import save_page; save_page(pg)
                     st.rerun()
 
         st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
