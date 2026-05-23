@@ -38,13 +38,19 @@ inject_styles()
 controller = CookieController()
 
 # ─── Cookie restore with two-pass render ─────────────────────────────────────
-# On first load, cookies aren't ready yet — we mark that we need to check,
-# then rerun once so the cookie controller has time to hydrate.
-if "cookie_checked" not in st.session_state:
-    st.session_state.cookie_checked = False
+# streamlit_cookies_controller needs one full render cycle to hydrate from
+# the browser before its .get() calls return real values.
+#
+# Pass 0 → "cookie_pass" not in session_state  → set to 1, rerun (let it hydrate)
+# Pass 1 → cookie_pass == 1                    → read cookie, set to 2, rerun
+# Pass 2+ → cookie_pass == 2                   → normal app render
 
-if not st.session_state.cookie_checked:
-    st.session_state.cookie_checked = True
+if "cookie_pass" not in st.session_state:
+    st.session_state.cookie_pass = 1
+    st.rerun()
+
+if st.session_state.cookie_pass == 1:
+    st.session_state.cookie_pass = 2
     try:
         cookie_val = controller.get("balikgamit_session")
         if cookie_val:
