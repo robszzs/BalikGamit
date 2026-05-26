@@ -168,8 +168,6 @@ def render_auth_gate() -> None:
                                 st.session_state.current_user = user
                                 st.session_state.page         = "Home"
                                 save_session_cookie(user)
-                                if user_data["role"] == "faculty":
-                                    st.toast("🛡️ Signing in as Admin", icon="🔐")
                                 st.rerun()
                                 
                     except Exception as e:
