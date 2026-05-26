@@ -191,7 +191,7 @@ def render() -> None:
                   </div>
                   <div style="background:white;border:1px solid #BFDBFE;padding:8px;
                               border-radius:6px;font-size:.76rem;color:#374151;font-style:italic;">
-                    "{clm['proof_text']}"
+                    \"{clm['proof_text']}\"
                   </div>
                 </div>
                 """, unsafe_allow_html=True)
@@ -235,3 +235,46 @@ def render() -> None:
                     )
                     st.toast("Claim ticket denied.")
                     st.rerun()
+
+    # ── Claimed Items History ─────────────────────────────────────────────────
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown("---")
+    st.markdown(
+        f'<div style="display:flex;align-items:center;gap:8px;margin-bottom:.5rem;">'
+        f'{icon_html("check-circle",15,"#166534")}'
+        f'<span style="font-weight:700;font-size:1.05rem;">Claimed Items History</span>'
+        f'<span class="badge badge-claimed">{len([c for c in db_claims if c.get("status") == "approved"])} resolved</span>'
+        f'</div>',
+        unsafe_allow_html=True,
+    )
+
+    approved_claims = [c for c in db_claims if c.get("status") == "approved"]
+
+    if not approved_claims:
+        st.info("No claimed items yet.")
+    else:
+        for clm in approved_claims:
+            original_item = items_map.get(clm.get("item_id"), {})
+            st.markdown(f"""
+            <div style="background:#F0FDF4;border:1px solid #BBF7D0;
+                        border-left:4px solid #22C55E;border-radius:10px;
+                        padding:12px 16px;margin-bottom:8px;
+                        display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+              <div>
+                <div style="font-weight:700;font-size:.88rem;color:#111827;">
+                  ✅ {clm['item_title']}
+                </div>
+                <div style="font-size:.74rem;color:#6B7280;margin-top:3px;">
+                  Claimed by: <strong>{clm['claimant_name']}</strong> · {clm['claimant_email']}
+                </div>
+                <div style="font-size:.74rem;color:#6B7280;margin-top:2px;">
+                  Category: {original_item.get('category', '—')} &nbsp;·&nbsp;
+                  Location: {original_item.get('location', '—')} &nbsp;·&nbsp;
+                  Date reported: {original_item.get('incident_date', '—')}
+                </div>
+              </div>
+              <span class="badge badge-claimed">RESOLVED</span>
+            </div>
+            """, unsafe_allow_html=True)   
+
+                    
