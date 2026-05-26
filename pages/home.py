@@ -108,6 +108,54 @@ def render() -> None:
             </div>
             """, unsafe_allow_html=True)
 
+    # ── My Found Reports ──────────────────────────────────────────────────────
+    try:
+        my_found_resp = supabase.table("items") \
+            .select("*") \
+            .eq("reporter_email", current_email) \
+            .eq("status", "found") \
+            .execute()
+        my_found = my_found_resp.data if my_found_resp.data else []
+    except Exception:
+        my_found = []
+
+    if my_found:
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown(
+            f'<span class="section-label">{icon_html("box",11,"#166634","margin-right:4px;")} Found Reports</span>',
+            unsafe_allow_html=True,
+        )
+        st.subheader("My Found Item Reports")
+
+        for item in my_found:
+            approved = item.get("approved", False)
+            style = ("#FFFBEB", "#FCD34D", "#92400E", "⏳", "PENDING REVIEW") if not approved else \
+                    ("#F0FDF4", "#BBF7D0", "#166534", "✅", "APPROVED")
+
+            st.markdown(f"""
+            <div style="background:{style[0]};border:1px solid {style[1]};
+                        border-left:4px solid {style[1]};border-radius:10px;
+                        padding:12px 16px;margin-bottom:8px;
+                        display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+              <div>
+                <div style="font-weight:700;font-size:.88rem;color:#111827;">
+                  {style[3]} {item.get('title', 'Unknown Item')}
+                </div>
+                <div style="font-size:.74rem;color:#6B7280;margin-top:3px;">
+                  📍 {item.get('location', '—')} &nbsp;·&nbsp; 📅 {item.get('incident_date', '—')}
+                </div>
+                <div style="font-size:.74rem;color:#6B7280;margin-top:2px;font-style:italic;">
+                  {item.get('description', '—')[:80]}{'...' if len(item.get('description', '')) > 80 else ''}
+                </div>
+              </div>
+              <span style="font-size:.72rem;font-weight:700;text-transform:uppercase;
+                           color:{style[2]};letter-spacing:.06em;white-space:nowrap;">
+                {style[4]}
+              </span>
+            </div>
+            """, unsafe_allow_html=True)
+
+
     col_feed, col_nav = st.columns([2, 1])
 
     with col_feed:
