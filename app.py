@@ -71,7 +71,3 @@ elif page == "Post an Item":
 elif page == "Admin Dashboard":
     admin.render()
 render_sidebar()
-
-# ── Admin sign-in popup ────────────────────────────────────────────────────────
-if st.session_state.get("show_admin_login_popup") and st.session_state.logged_in:
-    admin_signin_dialog()
