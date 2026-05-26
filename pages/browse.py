@@ -37,6 +37,7 @@ def render() -> None:
         st.session_state.claiming_item_id = None
     if "found_report_for_id" not in st.session_state:
         st.session_state.found_report_for_id = None
+        st.stop()
 
     # ── Filters ───────────────────────────────────────────────────────────────
     col_search, col_filter = st.columns([3, 1])
