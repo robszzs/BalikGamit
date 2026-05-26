@@ -110,6 +110,13 @@ def item_detail_dialog(item: dict) -> None:
         )
 
     st.markdown("---")
+    
+    if item.get("status") == "lost":
+        if st.button("I Found This", type="primary", use_container_width=True):
+            st.session_state.found_report_for_id = item["id"]
+            st.session_state.page = "Browse Items"
+            st.rerun()
+    
     st.markdown(
         f'<div style="display:flex;align-items:center;gap:6px;font-weight:600;font-size:.875rem;margin-bottom:6px;">'
         f'{icon_html("file-text",14,"#374151")} Full Description</div>',
