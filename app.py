@@ -70,4 +70,3 @@ elif page == "Post an Item":
     post_item.render()
 elif page == "Admin Dashboard":
     admin.render()
-render_sidebar()
