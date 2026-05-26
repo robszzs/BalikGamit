@@ -13,7 +13,6 @@ from auth import render_auth_gate
 from sidebar import render_sidebar
 from pages import home, browse, post_item, admin
 from db import supabase
-from dialogs import admin_signin_dialog
 
 VALID_PAGES = {"Home", "Browse Items", "Post an Item", "Admin Dashboard"}
 
