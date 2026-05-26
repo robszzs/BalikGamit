@@ -5,46 +5,6 @@ dialogs.py — Shared Streamlit dialog components for BalikGamit.
 import streamlit as st
 from utils import icon, icon_html, badge, photo_html, CATEGORY_ICONS
 
-@st.dialog("Signing In")
-def admin_signin_dialog() -> None:
-    user = st.session_state.get("current_user", {})
-    name = user.get("name", "Coordinator")
-    initials = "".join(p[0] for p in name.split()[:2]).upper()
-
-    st.markdown(f"""
-    <div style="text-align:center;padding:8px 0 20px 0;">
-      <div style="width:56px;height:56px;border-radius:16px;background:#164EC6;
-                  color:white;font-weight:800;font-size:1.2rem;
-                  display:flex;align-items:center;justify-content:center;
-                  margin:0 auto 14px auto;box-shadow:0 4px 14px rgba(22,78,198,.35);">
-        {initials}
-      </div>
-      <div style="font-size:1.15rem;font-weight:800;color:#111827;letter-spacing:-.03em;margin-bottom:4px;">
-        Signing in as Admin
-      </div>
-      <div style="font-size:.82rem;color:#6B7280;margin-bottom:6px;">
-        Welcome back, <strong style="color:#164EC6;">{name}</strong>
-      </div>
-      <div style="display:inline-flex;align-items:center;gap:6px;
-                  background:#EEF3FF;border:1px solid #BFDBFE;
-                  border-radius:20px;padding:4px 14px;
-                  font-size:.72rem;font-weight:700;color:#164EC6;
-                  text-transform:uppercase;letter-spacing:.08em;">
-        🛡️ Faculty Coordinator
-      </div>
-      <div style="margin-top:16px;background:#FFFBEB;border:1px solid #FDE68A;
-                  border-radius:10px;padding:10px 14px;
-                  font-size:.78rem;color:#92400E;line-height:1.5;text-align:left;">
-        You have access to the <strong>Admin Dashboard</strong> — approve posts,
-        manage claim tickets, and create faculty accounts.
-      </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    if st.button("Let's go →", type="primary", use_container_width=True):
-        st.session_state.show_admin_login_popup = False
-        st.rerun()
-
 @st.dialog("Sign Out")
 def sign_out_confirm_dialog() -> None:
     st.markdown(
