@@ -54,6 +54,13 @@ def render() -> None:
         db_items = []
 
     approved_items = [it for it in db_items if it.get("approved", False)]
+    # Fetch all claims for button state checking
+    try:
+        all_claims_resp = supabase.table("claims").select("item_id, claimant_email, status").execute()
+        all_claims = all_claims_resp.data if all_claims_resp.data else []
+    except Exception:
+        all_claims = []
+        
     categories     = sorted({it["category"] for it in approved_items if it.get("category")}) if approved_items else []
     selected_cats  = st.multiselect("Filter by category", categories, default=[]) if categories else []
     sort_by        = st.selectbox("Sort by", ["Newest first", "Oldest first", "Lost only", "Found only"])
@@ -292,9 +299,19 @@ def render() -> None:
 
             if item["status"] != "claimed":
                 if item["status"] == "found":
-                    if b2.button("Claim Item", key=f"claim_{item['id']}", type="primary", use_container_width=True):
-                        st.session_state.claiming_item_id = item["id"]
-                        st.rerun()
+                    # Check if user already has a claim on this item
+                    already_claimed = any(
+                        c.get("item_id") == item["id"] and
+                        c.get("claimant_email") == st.session_state.current_user["email"]
+                        for c in all_claims
+                    )
+                    if already_claimed:
+                        b2.button("⏳ Claim Pending", key=f"claim_{item['id']}", use_container_width=True, disabled=True)
+                    else:
+                        if b2.button("Claim Item", key=f"claim_{item['id']}", type="primary", use_container_width=True):
+                            st.session_state.claiming_item_id = item["id"]
+                            st.rerun()
+                            
                 elif item["status"] == "lost":
                     if b2.button("I Found This", key=f"ifound_{item['id']}", type="primary", use_container_width=True):
                         st.session_state.found_report_for_id = item["id"]
