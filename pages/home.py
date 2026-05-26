@@ -52,6 +52,62 @@ def render() -> None:
 
     st.markdown("<br>", unsafe_allow_html=True)
 
+    # ── My Claims ─────────────────────────────────────────────────────────────
+    current_email = st.session_state.current_user["email"]
+    try:
+        my_claims_resp = supabase.table("claims").select("*").eq("claimant_email", current_email).execute()
+        my_claims = my_claims_resp.data if my_claims_resp.data else []
+    except Exception:
+        my_claims = []
+
+    if my_claims:
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown(
+            f'<span class="section-label">{icon_html("clipboard",11,"#164EC6","margin-right:4px;")} My Activity</span>',
+            unsafe_allow_html=True,
+        )
+        st.subheader("My Claim Requests")
+
+        for clm in my_claims:
+            status = clm.get("status", "pending")
+            style = {
+                "pending":  ("#FFFBEB", "#FCD34D", "#92400E", "⏳"),
+                "approved": ("#F0FDF4", "#BBF7D0", "#166534", "✅"),
+                "rejected": ("#FEF2F2", "#FECACA", "#991B1B", "❌"),
+            }.get(status, ("#F9FAFB", "#E5E7EB", "#374151", "•"))
+
+            try:
+                item_resp = supabase.table("items").select("title, location").eq("id", clm["item_id"]).execute()
+                item_info = item_resp.data[0] if item_resp.data else {}
+            except Exception:
+                item_info = {}
+
+            proof_snippet = clm.get("proof_description", "—")
+            proof_snippet = proof_snippet[:80] + "..." if len(proof_snippet) > 80 else proof_snippet
+
+            st.markdown(f"""
+            <div style="background:{style[0]};border:1px solid {style[1]};
+                        border-left:4px solid {style[1]};border-radius:10px;
+                        padding:12px 16px;margin-bottom:8px;
+                        display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+              <div>
+                <div style="font-weight:700;font-size:.88rem;color:#111827;">
+                  {style[3]} {item_info.get('title', 'Unknown Item')}
+                </div>
+                <div style="font-size:.74rem;color:#6B7280;margin-top:3px;">
+                  📍 {item_info.get('location', '—')}
+                </div>
+                <div style="font-size:.74rem;color:#6B7280;margin-top:2px;font-style:italic;">
+                  Proof submitted: {proof_snippet}
+                </div>
+              </div>
+              <span style="font-size:.72rem;font-weight:700;text-transform:uppercase;
+                           color:{style[2]};letter-spacing:.06em;white-space:nowrap;">
+                {status.upper()}
+              </span>
+            </div>
+            """, unsafe_allow_html=True)
+
     col_feed, col_nav = st.columns([2, 1])
 
     with col_feed:
