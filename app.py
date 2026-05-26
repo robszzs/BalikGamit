@@ -13,6 +13,7 @@ from auth import render_auth_gate
 from sidebar import render_sidebar
 from pages import home, browse, post_item, admin
 from db import supabase
+from dialogs import admin_signin_dialog
 
 VALID_PAGES = {"Home", "Browse Items", "Post an Item", "Admin Dashboard"}
 
@@ -70,3 +71,8 @@ elif page == "Post an Item":
     post_item.render()
 elif page == "Admin Dashboard":
     admin.render()
+render_sidebar()
+
+# ── Admin sign-in popup ────────────────────────────────────────────────────────
+if st.session_state.get("show_admin_login_popup") and st.session_state.logged_in:
+    admin_signin_dialog()
